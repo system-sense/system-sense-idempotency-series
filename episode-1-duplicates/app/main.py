@@ -53,7 +53,7 @@ async def health():
     return {"ok": True}
 
 
-async def _charge_and_record(req: CheckoutRequest) -> dict:
+async def charge_customer(req: CheckoutRequest) -> dict:
     """Call the processor, then write down what it told us.
 
     Shielded by the caller: a customer closing their laptop must not leave a
@@ -70,26 +70,19 @@ async def _charge_and_record(req: CheckoutRequest) -> dict:
     async with state["db"].acquire() as con:
         row = await con.fetchrow(
             "INSERT INTO charges (customer_id, amount_cents, processor_charge_id)"
-            " VALUES ($1, $2, $3) RETURNING id, created_at",
-            req.customer_id,
-            req.amount_cents,
-            charge["id"],
+            " VALUES ($1, $2, $3) RETURNING id",
+            req.customer_id, req.amount_cents, charge["id"],
         )
 
-    return {
-        "charge_id": row["id"],
-        "processor_charge_id": charge["id"],
-        "customer_id": req.customer_id,
-        "amount_cents": req.amount_cents,
-        "created_at": row["created_at"].isoformat(),
-    }
+    return {"charge_id": row["id"], "processor_charge_id": charge["id"],
+            "customer_id": req.customer_id, "amount_cents": req.amount_cents}
 
 
 @app.post("/api/checkout")
 async def checkout(req: CheckoutRequest):
     """Charge a customer. Once. Correctly. Every single time it is called."""
     started = time.perf_counter()
-    result = await asyncio.shield(asyncio.create_task(_charge_and_record(req)))
+    result = await asyncio.shield(asyncio.create_task(charge_customer(req)))
     elapsed_ms = (time.perf_counter() - started) * 1000
 
     print(
