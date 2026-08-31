@@ -1,0 +1,3 @@
+  customer 18  attempt 1  OK in 1.30s  -> ch_d37616513f224c66
+DRIVER checkouts=1 requests=1 timeouts=0 failed=0 owed_cents=4000 client_timeout_ms=2000 amount_cents=4000
+RESULT fast app_charges=1 app_cents=4000 processor_charges=1 collected_cents=4000 double_charged_customers=0 duplicate_charges=0

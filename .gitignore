@@ -1,0 +1,16 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# OS
+.DS_Store
+
+# Local env overrides
+.env
+.env.local
+
+# Captured demo output is committed on purpose (it is the episode's evidence),
+# but transient run logs are not.
+capture/*.tmp

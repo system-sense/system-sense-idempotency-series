@@ -1,0 +1,55 @@
+  customer 1   attempt 1  OK in 1.36s  -> ch_39889580068747ce
+  customer 2   attempt 1  OK in 1.49s  -> ch_baaab580a84e4065
+  customer 3   attempt 1  OK in 1.63s  -> ch_dae48ca02dc64e42
+  customer 4   attempt 1  OK in 1.76s  -> ch_8c5d40ca6cc4457e
+  customer 5   attempt 1  OK in 1.90s  -> ch_55135c7c6afd4898
+  customer 6   attempt 1  TIMEOUT after 2.00s  (TimeoutError)
+  customer 6   attempt 2  TIMEOUT after 2.00s  (TimeoutError)
+  customer 6   FAILED  <- the customer is told the payment did not go through
+  customer 7   attempt 1  TIMEOUT after 2.00s  (TimeoutError)
+  customer 7   attempt 2  TIMEOUT after 2.00s  (TimeoutError)
+  customer 7   FAILED  <- the customer is told the payment did not go through
+  customer 8   attempt 1  TIMEOUT after 2.00s  (TimeoutError)
+  customer 8   attempt 2  TIMEOUT after 2.00s  (TimeoutError)
+  customer 8   FAILED  <- the customer is told the payment did not go through
+  customer 9   attempt 1  TIMEOUT after 2.00s  (TimeoutError)
+  customer 9   attempt 2  TIMEOUT after 2.00s  (TimeoutError)
+  customer 9   FAILED  <- the customer is told the payment did not go through
+  customer 10  attempt 1  TIMEOUT after 2.00s  (TimeoutError)
+  customer 10  attempt 2  TIMEOUT after 2.00s  (TimeoutError)
+  customer 10  FAILED  <- the customer is told the payment did not go through
+  customer 11  attempt 1  TIMEOUT after 2.00s  (TimeoutError)
+  customer 11  attempt 2  TIMEOUT after 2.00s  (TimeoutError)
+  customer 11  FAILED  <- the customer is told the payment did not go through
+  customer 12  attempt 1  TIMEOUT after 2.00s  (TimeoutError)
+  customer 12  attempt 2  TIMEOUT after 2.00s  (TimeoutError)
+  customer 12  FAILED  <- the customer is told the payment did not go through
+  customer 13  attempt 1  TIMEOUT after 2.00s  (TimeoutError)
+  customer 13  attempt 2  TIMEOUT after 2.00s  (TimeoutError)
+  customer 13  FAILED  <- the customer is told the payment did not go through
+  customer 14  attempt 1  TIMEOUT after 2.00s  (TimeoutError)
+  customer 14  attempt 2  TIMEOUT after 2.00s  (TimeoutError)
+  customer 14  FAILED  <- the customer is told the payment did not go through
+  customer 15  attempt 1  TIMEOUT after 2.00s  (TimeoutError)
+  customer 15  attempt 2  TIMEOUT after 2.00s  (TimeoutError)
+  customer 15  FAILED  <- the customer is told the payment did not go through
+  customer 16  attempt 1  TIMEOUT after 2.00s  (TimeoutError)
+  customer 16  attempt 2  TIMEOUT after 2.00s  (TimeoutError)
+  customer 16  FAILED  <- the customer is told the payment did not go through
+  customer 17  attempt 1  TIMEOUT after 2.00s  (TimeoutError)
+  customer 17  attempt 2  TIMEOUT after 2.00s  (TimeoutError)
+  customer 17  FAILED  <- the customer is told the payment did not go through
+  customer 18  attempt 1  OK in 1.29s  -> ch_67cbd7aeed644365
+  customer 19  attempt 1  OK in 1.42s  -> ch_b5dfb6bb14d445d2
+  customer 20  attempt 1  OK in 1.56s  -> ch_d720060c39bf4e67
+  customer 21  attempt 1  OK in 1.69s  -> ch_fbd89d525ed540ad
+  customer 22  attempt 1  OK in 1.83s  -> ch_01513c96498d4c29
+  customer 23  attempt 1  OK in 1.97s  -> ch_25350c2eafa04210
+  customer 24  attempt 1  TIMEOUT after 2.00s  (TimeoutError)
+  customer 24  attempt 2  TIMEOUT after 2.00s  (TimeoutError)
+  customer 24  FAILED  <- the customer is told the payment did not go through
+  customer 25  attempt 1  TIMEOUT after 2.00s  (TimeoutError)
+  customer 25  attempt 2  TIMEOUT after 2.00s  (TimeoutError)
+  customer 25  FAILED  <- the customer is told the payment did not go through
+DRIVER checkouts=25 requests=39 timeouts=28 failed=14 owed_cents=100000 client_timeout_ms=2000 amount_cents=4000
+RESULT fleet app_charges=39 app_cents=156000 processor_charges=39 collected_cents=156000 double_charged_customers=14 duplicate_charges=14

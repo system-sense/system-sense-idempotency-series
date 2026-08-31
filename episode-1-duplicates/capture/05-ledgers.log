@@ -1,0 +1,33 @@
+-- our application's books
+ charges | cents  | customers 
+---------+--------+-----------
+      39 | 156000 |        25
+(1 row)
+
+
+-- the payment processor's books
+ charges | cents  | customers 
+---------+--------+-----------
+      39 | 156000 |        25
+(1 row)
+
+
+-- who paid twice
+ customer_id | times_charged | cents 
+-------------+---------------+-------
+           6 |             2 |  8000
+           7 |             2 |  8000
+           8 |             2 |  8000
+           9 |             2 |  8000
+          10 |             2 |  8000
+          11 |             2 |  8000
+          12 |             2 |  8000
+          13 |             2 |  8000
+          14 |             2 |  8000
+          15 |             2 |  8000
+          16 |             2 |  8000
+          17 |             2 |  8000
+          24 |             2 |  8000
+          25 |             2 |  8000
+(14 rows)
+

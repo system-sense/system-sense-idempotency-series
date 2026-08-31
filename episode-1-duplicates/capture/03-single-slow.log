@@ -1,0 +1,13 @@
+  customer 17  attempt 1  TIMEOUT after 2.01s  (TimeoutError)
+  customer 17  attempt 2  TIMEOUT after 2.00s  (TimeoutError)
+  customer 17  FAILED  <- the customer is told the payment did not go through
+DRIVER checkouts=1 requests=2 timeouts=2 failed=1 owed_cents=4000 client_timeout_ms=2000 amount_cents=4000
+RESULT slow app_charges=2 app_cents=8000 processor_charges=2 collected_cents=8000 double_charged_customers=1 duplicate_charges=1
+
+-- what the processor's books say about customer 17
+         id          | customer_id | amount_cents | captured_at  
+---------------------+-------------+--------------+--------------
+ ch_dd0f432867f64055 |          17 |         4000 | 19:56:55.492
+ ch_f987f11543ca4a73 |          17 |         4000 | 19:56:57.506
+(2 rows)
+

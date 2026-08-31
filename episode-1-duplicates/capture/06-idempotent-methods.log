@@ -1,0 +1,14 @@
+-- GET /api/customers/18, five times
+{"id":18,"name":"Customer 18","email":"customer18@example.com","charges":1,"charged_cents":4000}
+{"id":18,"name":"Customer 18","email":"customer18@example.com","charges":1,"charged_cents":4000}
+{"id":18,"name":"Customer 18","email":"customer18@example.com","charges":1,"charged_cents":4000}
+{"id":18,"name":"Customer 18","email":"customer18@example.com","charges":1,"charged_cents":4000}
+{"id":18,"name":"Customer 18","email":"customer18@example.com","charges":1,"charged_cents":4000}
+
+-- PUT /api/customers/18/email, three times, same body
+{"id":18,"email":"eighteen@example.com"}
+{"id":18,"email":"eighteen@example.com"}
+{"id":18,"email":"eighteen@example.com"}
+
+-- rows in customers for id 18 afterwards
+1
