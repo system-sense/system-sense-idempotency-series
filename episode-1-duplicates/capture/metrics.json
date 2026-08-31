@@ -21,9 +21,11 @@
     "overcharge_cents": 0,
     "double_charged_customers": 0,
     "duplicate_charges": 0,
+    "customer_id": 18,
     "owed_dollars": "40.00",
     "collected_dollars": "40.00",
-    "overcharge_dollars": "0.00"
+    "overcharge_dollars": "0.00",
+    "processor_latency_ms": 1266
   },
   "single_slow": {
     "checkouts": 1,
@@ -37,9 +39,11 @@
     "overcharge_cents": 4000,
     "double_charged_customers": 1,
     "duplicate_charges": 1,
+    "customer_id": 17,
     "owed_dollars": "40.00",
     "collected_dollars": "80.00",
-    "overcharge_dollars": "40.00"
+    "overcharge_dollars": "40.00",
+    "processor_latency_ms": 3529
   },
   "fleet": {
     "checkouts": 25,

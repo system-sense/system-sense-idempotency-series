@@ -56,9 +56,23 @@ def dollars(cents: int) -> str:
     return f"{cents / 100:,.2f}"
 
 
+def customer_in(log: str) -> int:
+    """Which customer the single-checkout scenarios used.
+
+    Read back from the log rather than hardcoded, so that changing the id in
+    capture-demo.sh cannot leave metrics.json quietly describing a different
+    person than the one the episode shows.
+    """
+    m = re.search(r"customer (\d+)", text(log))
+    return int(m.group(1)) if m else 0
+
+
 fast = scenario("02-single-fast.log", "fast")
 slow = scenario("03-single-slow.log", "slow")
 fleet = scenario("04-fleet.log", "fleet")
+
+fast["customer_id"] = customer_in("02-single-fast.log")
+slow["customer_id"] = customer_in("03-single-slow.log")
 
 fleet["duplicate_rate_pct"] = (
     round(100 * fleet["double_charged_customers"] / fleet["checkouts"], 1)
@@ -99,6 +113,18 @@ def section(header: str) -> list[str]:
 get_bodies = section("-- GET")
 put_bodies = section("-- PUT")
 rows_after = re.search(r"^(\d+)$", methods.strip().splitlines()[-1]) if methods.strip() else None
+
+def latency_for(customer_id: int) -> int:
+    """The processor's own formula, applied to the settings this run used.
+
+    Not a guess: `processor/main.py` computes exactly this, and both inputs are
+    read back out of the running container in 01-compose-up.log.
+    """
+    return base + (customer_id * 137) % spread if spread else 0
+
+
+fast["processor_latency_ms"] = latency_for(fast["customer_id"])
+slow["processor_latency_ms"] = latency_for(slow["customer_id"])
 
 metrics = {
     "scenario": {
