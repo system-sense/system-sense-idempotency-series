@@ -1,0 +1,64 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: sysense
+      POSTGRES_PASSWORD: sysense
+      POSTGRES_DB: sysense
+    volumes:
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sysense -d sysense"]
+      interval: 2s
+      timeout: 3s
+      retries: 60
+
+  # ─────────────────────────────────────────────────────────────────────────
+  #  THE KNOB.
+  #
+  #  How slow the payment processor is. Latency for a given customer is
+  #
+  #      LATENCY_BASE_MS + (customer_id * 137) % LATENCY_SPREAD_MS
+  #
+  #  which with the defaults spans 1200–3599 ms and straddles the two-second
+  #  timeout the client uses. Roughly half the checkouts come back in time and
+  #  roughly half do not.
+  #
+  #  Turn the processor reliably fast and the bug vanishes:
+  #
+  #      LATENCY_BASE_MS=100 LATENCY_SPREAD_MS=200 docker compose up
+  #
+  #  It has not been fixed. It has been hidden, which is how this reaches
+  #  production in the first place.
+  # ─────────────────────────────────────────────────────────────────────────
+  processor:
+    build: ./processor
+    environment:
+      DATABASE_URL: "postgres://sysense:sysense@postgres:5432/sysense"
+      LATENCY_BASE_MS: "${LATENCY_BASE_MS:-1200}"
+      LATENCY_SPREAD_MS: "${LATENCY_SPREAD_MS:-2400}"
+    ports:
+      - "9000:9000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  app:
+    build: .
+    environment:
+      DATABASE_URL: "postgres://sysense:sysense@postgres:5432/sysense"
+      PROCESSOR_URL: "http://processor:9000"
+      PROCESSOR_TIMEOUT_SECONDS: "30"
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      processor:
+        condition: service_started
+
+volumes:
+  pgdata:
