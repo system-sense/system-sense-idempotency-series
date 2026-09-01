@@ -139,6 +139,20 @@ async def checkout_off(req: CheckoutRequest, key: str | None) -> Response:
 
 
 # ── Modes 2 and 3: check, then insert. ─────────────────────────────────────
+SEEN = """
+SELECT response_status, response_body FROM idempotency_keys
+ WHERE scope = $1 AND idempotency_key = $2
+   AND status = 'completed' AND expires_at > now()
+"""
+
+RECORD = """
+INSERT INTO idempotency_keys (scope, idempotency_key, request_fingerprint,
+                              status, response_status, response_body,
+                              completed_at, expires_at)
+VALUES ($1, $2, $3, 'completed', 200, $4, now(), now() + make_interval(secs => $5))
+"""
+
+
 async def checkout_check_then_insert(req: CheckoutRequest, key: str) -> Response:
     """The obvious fix. Read it and try to find what is wrong with it.
 
@@ -149,12 +163,7 @@ async def checkout_check_then_insert(req: CheckoutRequest, key: str) -> Response
     scope = scope_for(req)
 
     async with state["db"].acquire() as con:
-        seen = await con.fetchrow(
-            "SELECT response_status, response_body FROM idempotency_keys"
-            " WHERE scope = $1 AND idempotency_key = $2"
-            "   AND status = 'completed' AND expires_at > now()",
-            scope, key,
-        )
+        seen = await con.fetchrow(SEEN, scope, key)
     checked_at = time.perf_counter()
 
     if seen is not None:
@@ -171,13 +180,8 @@ async def checkout_check_then_insert(req: CheckoutRequest, key: str) -> Response
     body = serialise(result)
 
     async with state["db"].acquire() as con:
-        await con.execute(
-            "INSERT INTO idempotency_keys (scope, idempotency_key, request_fingerprint,"
-            " status, response_status, response_body, completed_at, expires_at)"
-            " VALUES ($1, $2, $3, 'completed', 200, $4, now(),"
-            "         now() + make_interval(secs => $5))",
-            scope, key, fingerprint(req), body, config.IDEMPOTENCY_TTL_SECONDS,
-        )
+        await con.execute(RECORD, scope, key, fingerprint(req), body,
+                          config.IDEMPOTENCY_TTL_SECONDS)
 
     window_ms = (time.perf_counter() - checked_at) * 1000
     log(f"customer={req.customer_id} key={key} CHECK absent -> CHARGED -> RECORDED "
