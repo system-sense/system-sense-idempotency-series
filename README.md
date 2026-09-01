@@ -13,7 +13,7 @@ Caching series, with Redis added in Episode 3 where it earns its place.
 | Episode | Folder | Thesis | State |
 | --- | --- | --- | --- |
 | 1. The Retry That Charged Your Customer Twice | [`episode-1-duplicates/`](episode-1-duplicates/) | A timeout is not a failure. The request succeeded; only the response was lost. | [**watch**](https://www.youtube.com/watch?v=KE7CCnTfQqk) |
-| 2. Your Idempotency Key Has a Race Condition | `episode-2-keys/` | "Check, then insert" is TOCTOU. Let a `UNIQUE` constraint arbitrate, not your application. | not built |
+| 2. Your Idempotency Key Has a Race Condition | [`episode-2-keys/`](episode-2-keys/) | "Check, then insert" is TOCTOU, and the `UNIQUE` constraint only helps if you claim the key before you do the work. | demo built |
 | 3. 3 Ways Your Queue Silently Loses Work | `episode-3-queues/` | Visibility timeouts, poison messages, dead-letter queues. | not built |
 | 4. Exactly-Once Delivery Is a Lie | `episode-4-outbox/` | Exactly-once *delivery* is impossible. Exactly-once *effects* are not. | not built |
 

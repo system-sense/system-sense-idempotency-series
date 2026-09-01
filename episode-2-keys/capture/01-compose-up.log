@@ -1,0 +1,104 @@
+ Image episode-2-keys-processor Building 
+ Image episode-2-keys-app Building 
+#1 [internal] load local bake definitions
+#1 reading from stdin 1.14kB done
+#1 DONE 0.0s
+
+#2 [app internal] load build definition from Dockerfile
+#2 transferring dockerfile: 277B done
+#2 DONE 0.0s
+
+#3 [processor internal] load build definition from Dockerfile
+#3 transferring dockerfile: 273B done
+#3 DONE 0.0s
+
+#4 [processor internal] load metadata for docker.io/library/python:3.12-slim
+#4 DONE 0.4s
+
+#5 [app internal] load .dockerignore
+#5 transferring context: 2B done
+#5 DONE 0.0s
+
+#6 [processor internal] load .dockerignore
+#6 transferring context: 2B done
+#6 DONE 0.0s
+
+#7 [app 1/5] FROM docker.io/library/python:3.12-slim@sha256:e5c9fa26ffb76e11e0f054f30dc2523a2f9693f0c36c0cf1e39b27e152d899fc
+#7 DONE 0.0s
+
+#8 [app internal] load build context
+#8 transferring context: 157B done
+#8 DONE 0.0s
+
+#9 [processor internal] load build context
+#9 transferring context: 64B done
+#9 DONE 0.0s
+
+#10 [app 4/5] RUN pip install --no-cache-dir -r requirements.txt
+#10 CACHED
+
+#11 [app 3/5] COPY requirements.txt .
+#11 CACHED
+
+#12 [app 5/5] COPY app ./app
+#12 CACHED
+
+#13 [processor 3/5] COPY requirements.txt .
+#13 CACHED
+
+#14 [processor 4/5] RUN pip install --no-cache-dir -r requirements.txt
+#14 CACHED
+
+#15 [processor 2/5] WORKDIR /srv
+#15 CACHED
+
+#16 [processor 5/5] COPY main.py .
+#16 CACHED
+
+#17 [app] exporting to image
+#17 exporting layers done
+#17 writing image sha256:18cc44bd304315b797b01ecf24eda8f4c4bf8402c9214a54ac2d9f9404febe27 done
+#17 naming to docker.io/library/episode-2-keys-app done
+#17 DONE 0.0s
+
+#18 [processor] exporting to image
+#18 exporting layers done
+#18 writing image sha256:df7cd2d5a27a1a0acfcee69b716bb8904405594d38571d3feeb5286832012e84 done
+#18 naming to docker.io/library/episode-2-keys-processor done
+#18 DONE 0.0s
+
+#19 [app] resolving provenance for metadata file
+#19 DONE 0.0s
+
+#20 [processor] resolving provenance for metadata file
+#20 DONE 0.0s
+ Image episode-2-keys-processor Built 
+ Image episode-2-keys-app Built 
+ Network episode-2-keys_default Creating 
+ Network episode-2-keys_default Created 
+ Volume episode-2-keys_pgdata Creating 
+ Volume episode-2-keys_pgdata Created 
+ Container episode-2-keys-postgres-1 Creating 
+ Container episode-2-keys-postgres-1 Created 
+ Container episode-2-keys-processor-1 Creating 
+ Container episode-2-keys-processor-1 Created 
+ Container episode-2-keys-app-1 Creating 
+ Container episode-2-keys-app-1 Created 
+ Container episode-2-keys-postgres-1 Starting 
+ Container episode-2-keys-postgres-1 Started 
+ Container episode-2-keys-postgres-1 Waiting 
+ Container episode-2-keys-postgres-1 Healthy 
+ Container episode-2-keys-processor-1 Starting 
+ Container episode-2-keys-processor-1 Started 
+ Container episode-2-keys-postgres-1 Waiting 
+ Container episode-2-keys-postgres-1 Healthy 
+ Container episode-2-keys-app-1 Starting 
+ Container episode-2-keys-app-1 Started 
+processor latency = LATENCY_BASE_MS + (customer_id * 137) % LATENCY_SPREAD_MS
+1200 2400 
+app processor timeout = 30
+
+idempotency ttl = 86400
+
+-- is there a unique index on idempotency_keys?
+0

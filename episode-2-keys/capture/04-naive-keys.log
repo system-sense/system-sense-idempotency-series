@@ -1,0 +1,33 @@
+-- who paid twice, WITH the idempotency key in place
+ customer_id | times_charged | cents 
+-------------+---------------+-------
+           5 |             2 |  8000
+           6 |             2 |  8000
+           7 |             2 |  8000
+           8 |             2 |  8000
+           9 |             2 |  8000
+          10 |             2 |  8000
+          11 |             2 |  8000
+          12 |             2 |  8000
+          13 |             2 |  8000
+          14 |             2 |  8000
+(10 rows)
+
+
+-- keys the table accepted more than once
+ idempotency_key | rows |             scope              
+-----------------+------+--------------------------------
+ k_00e1830686a7  |    2 | customer:5|POST /api/checkout
+ k_33ce9c7e6dae  |    2 | customer:25|POST /api/checkout
+ k_3d218fb3450d  |    2 | customer:16|POST /api/checkout
+ k_46fdc69aa06d  |    2 | customer:11|POST /api/checkout
+ k_78f848003f8f  |    2 | customer:6|POST /api/checkout
+ k_920527107ff6  |    2 | customer:10|POST /api/checkout
+ k_ad5163bef8e0  |    2 | customer:24|POST /api/checkout
+ k_b66232080593  |    2 | customer:7|POST /api/checkout
+(8 rows)
+
+
+-- the window between one request's check and its insert, in milliseconds
+  requests=41  min=1310.3 ms  median=2248.9 ms  max=3571.3 ms
+WINDOW naive requests=41 min_ms=1310.3 median_ms=2248.9 max_ms=3571.3

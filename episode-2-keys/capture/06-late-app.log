@@ -1,0 +1,43 @@
+[app] mode=late  ttl=86400s  unique_constraint=True
+[late] customer=18 key=k_fedfd18bc2d4 CHECK absent -> CHARGED -> RECORDED window_ms=1285.979
+[late] customer=1 key=k_34672decb242 CHECK absent -> CHARGED -> RECORDED window_ms=1390.492
+[late] customer=19 key=k_4a34fa19fac4 CHECK absent -> CHARGED -> RECORDED window_ms=1443.540
+[late] customer=2 key=k_bd5eb3a65c97 CHECK absent -> CHARGED -> RECORDED window_ms=1526.889
+[late] customer=20 key=k_2591b107994e CHECK absent -> CHARGED -> RECORDED window_ms=1576.465
+[late] customer=3 key=k_50506fb21dc7 CHECK absent -> CHARGED -> RECORDED window_ms=1646.186
+[late] customer=21 key=k_70e2c7f4459c CHECK absent -> CHARGED -> RECORDED window_ms=1704.321
+[late] customer=4 key=k_70c885fce7f9 CHECK absent -> CHARGED -> RECORDED window_ms=1817.559
+[late] customer=22 key=k_c0ad356b5b95 CHECK absent -> CHARGED -> RECORDED window_ms=1866.139
+[late] customer=5 key=k_b138d2ca74ca CHECK absent -> CHARGED -> RECORDED window_ms=1953.131
+[late] customer=23 key=k_4f889dddca44 CHECK absent -> CHARGED -> RECORDED window_ms=1964.078
+[late] customer=6 key=k_58a870cf7c85 CHECK absent -> CHARGED -> RECORDED window_ms=2142.133
+[late] customer=24 key=k_9dbc624cba57 CHECK absent -> CHARGED -> RECORDED window_ms=2113.937
+[late] customer=7 key=k_0de23a484d12 CHECK absent -> CHARGED -> RECORDED window_ms=2251.012
+[late] customer=25 key=k_d8d200d00364 CHECK absent -> CHARGED -> RECORDED window_ms=2310.144
+[late] customer=8 key=k_cf36d8040599 CHECK absent -> CHARGED -> RECORDED window_ms=2381.375
+[late] customer=9 key=k_a63bb5f3ad87 CHECK absent -> CHARGED -> RECORDED window_ms=2492.891
+[late] customer=10 key=k_fb093496af24 CHECK absent -> CHARGED -> RECORDED window_ms=2615.732
+[late] customer=11 key=k_e6371fb678c6 CHECK absent -> CHARGED -> RECORDED window_ms=2723.169
+[late] customer=12 key=k_1136cfbac7c2 CHECK absent -> CHARGED -> RECORDED window_ms=2861.613
+[late] customer=13 key=k_7a0fc2053dd1 CHECK absent -> CHARGED -> RECORDED window_ms=3025.717
+[late] customer=14 key=k_de4a956867a3 CHECK absent -> CHARGED -> RECORDED window_ms=3131.652
+[late] customer=15 key=k_d6b24ee51241 CHECK absent -> CHARGED -> RECORDED window_ms=3307.392
+[late] customer=16 key=k_2e3f7a23345c CHECK absent -> CHARGED -> RECORDED window_ms=3407.174
+[late] customer=17 key=k_0eaba552cda2 CHECK absent -> CHARGED -> RECORDED window_ms=3652.508
+[late] DUPLICATE KEY REFUSED -> 500 (the charge had already been captured)
+[late] DUPLICATE KEY REFUSED -> 500 (the charge had already been captured)
+[late] DUPLICATE KEY REFUSED -> 500 (the charge had already been captured)
+[late] DUPLICATE KEY REFUSED -> 500 (the charge had already been captured)
+[late] DUPLICATE KEY REFUSED -> 500 (the charge had already been captured)
+[late] DUPLICATE KEY REFUSED -> 500 (the charge had already been captured)
+[late] DUPLICATE KEY REFUSED -> 500 (the charge had already been captured)
+[late] DUPLICATE KEY REFUSED -> 500 (the charge had already been captured)
+[late] DUPLICATE KEY REFUSED -> 500 (the charge had already been captured)
+[late] DUPLICATE KEY REFUSED -> 500 (the charge had already been captured)
+[late] DUPLICATE KEY REFUSED -> 500 (the charge had already been captured)
+[late] DUPLICATE KEY REFUSED -> 500 (the charge had already been captured)
+[late] DUPLICATE KEY REFUSED -> 500 (the charge had already been captured)
+[late] DUPLICATE KEY REFUSED -> 500 (the charge had already been captured)
+[late] DUPLICATE KEY REFUSED -> 500 (the charge had already been captured)
+[late] DUPLICATE KEY REFUSED -> 500 (the charge had already been captured)
+[late] DUPLICATE KEY REFUSED -> 500 (the charge had already been captured)

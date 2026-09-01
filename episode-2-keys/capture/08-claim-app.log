@@ -1,0 +1,66 @@
+[app] mode=claim  ttl=86400s  unique_constraint=True
+[claim] customer=18 key=k_3430f61758a3 CLAIMED -> CHARGED -> COMPLETED
+[claim] customer=1 key=k_5ebf87e48a30 CLAIMED -> CHARGED -> COMPLETED
+[claim] customer=19 key=k_123c361b0657 CLAIMED -> CHARGED -> COMPLETED
+[claim] customer=2 key=k_0a3cb0f9d737 CLAIMED -> CHARGED -> COMPLETED
+[claim] customer=20 key=k_322150f6c37d CLAIMED -> CHARGED -> COMPLETED
+[claim] customer=3 key=k_203d61246f4c CLAIMED -> CHARGED -> COMPLETED
+[claim] customer=21 key=k_4a4410baa017 CLAIMED -> CHARGED -> COMPLETED
+[claim] customer=4 key=k_7abd544c3762 CLAIMED -> CHARGED -> COMPLETED
+[claim] customer=5 key=k_d983e18e0ca5 LOST -> IN FLIGHT 409
+[claim] customer=11 key=k_46b96e93238e LOST -> IN FLIGHT 409
+[claim] customer=13 key=k_088e472f9f14 LOST -> IN FLIGHT 409
+[claim] customer=10 key=k_622562a81981 LOST -> IN FLIGHT 409
+[claim] customer=22 key=k_cb04f1990469 LOST -> IN FLIGHT 409
+[claim] customer=17 key=k_59ac38930d8c LOST -> IN FLIGHT 409
+[claim] customer=25 key=k_ced22fed3547 LOST -> IN FLIGHT 409
+[claim] customer=8 key=k_901eaf3a08e2 LOST -> IN FLIGHT 409
+[claim] customer=15 key=k_aff366e0412c LOST -> IN FLIGHT 409
+[claim] customer=14 key=k_5e8b4e484dbe LOST -> IN FLIGHT 409
+[claim] customer=24 key=k_a1dab557fe17 LOST -> IN FLIGHT 409
+[claim] customer=6 key=k_fa2a278627b1 LOST -> IN FLIGHT 409
+[claim] customer=16 key=k_0a00955eda4f LOST -> IN FLIGHT 409
+[claim] customer=12 key=k_add6c1689c33 LOST -> IN FLIGHT 409
+[claim] customer=23 key=k_b2a9cba9b2f9 LOST -> IN FLIGHT 409
+[claim] customer=7 key=k_ecd3d929c2dd LOST -> IN FLIGHT 409
+[claim] customer=9 key=k_1865b8a0c0d0 LOST -> IN FLIGHT 409
+[claim] customer=22 key=k_cb04f1990469 CLAIMED -> CHARGED -> COMPLETED
+[claim] customer=5 key=k_d983e18e0ca5 CLAIMED -> CHARGED -> COMPLETED
+[claim] customer=23 key=k_b2a9cba9b2f9 CLAIMED -> CHARGED -> COMPLETED
+[claim] customer=6 key=k_fa2a278627b1 CLAIMED -> CHARGED -> COMPLETED
+[claim] customer=24 key=k_a1dab557fe17 CLAIMED -> CHARGED -> COMPLETED
+[claim] customer=7 key=k_ecd3d929c2dd CLAIMED -> CHARGED -> COMPLETED
+[claim] customer=25 key=k_ced22fed3547 CLAIMED -> CHARGED -> COMPLETED
+[claim] customer=8 key=k_901eaf3a08e2 CLAIMED -> CHARGED -> COMPLETED
+[claim] customer=9 key=k_1865b8a0c0d0 CLAIMED -> CHARGED -> COMPLETED
+[claim] customer=10 key=k_622562a81981 CLAIMED -> CHARGED -> COMPLETED
+[claim] customer=11 key=k_46b96e93238e CLAIMED -> CHARGED -> COMPLETED
+[claim] customer=11 key=k_46b96e93238e LOST -> REPLAY 200
+[claim] customer=10 key=k_622562a81981 LOST -> REPLAY 200
+[claim] customer=12 key=k_add6c1689c33 LOST -> IN FLIGHT 409
+[claim] customer=25 key=k_ced22fed3547 LOST -> REPLAY 200
+[claim] customer=8 key=k_901eaf3a08e2 LOST -> REPLAY 200
+[claim] customer=17 key=k_59ac38930d8c LOST -> IN FLIGHT 409
+[claim] customer=5 key=k_d983e18e0ca5 LOST -> REPLAY 200
+[claim] customer=13 key=k_088e472f9f14 LOST -> IN FLIGHT 409
+[claim] customer=7 key=k_ecd3d929c2dd LOST -> REPLAY 200
+[claim] customer=14 key=k_5e8b4e484dbe LOST -> IN FLIGHT 409
+[claim] customer=24 key=k_a1dab557fe17 LOST -> REPLAY 200
+[claim] customer=6 key=k_fa2a278627b1 LOST -> REPLAY 200
+[claim] customer=9 key=k_1865b8a0c0d0 LOST -> REPLAY 200
+[claim] customer=15 key=k_aff366e0412c LOST -> IN FLIGHT 409
+[claim] customer=22 key=k_cb04f1990469 LOST -> REPLAY 200
+[claim] customer=16 key=k_0a00955eda4f LOST -> IN FLIGHT 409
+[claim] customer=23 key=k_b2a9cba9b2f9 LOST -> REPLAY 200
+[claim] customer=12 key=k_add6c1689c33 CLAIMED -> CHARGED -> COMPLETED
+[claim] customer=13 key=k_088e472f9f14 CLAIMED -> CHARGED -> COMPLETED
+[claim] customer=14 key=k_5e8b4e484dbe CLAIMED -> CHARGED -> COMPLETED
+[claim] customer=15 key=k_aff366e0412c CLAIMED -> CHARGED -> COMPLETED
+[claim] customer=16 key=k_0a00955eda4f CLAIMED -> CHARGED -> COMPLETED
+[claim] customer=17 key=k_59ac38930d8c CLAIMED -> CHARGED -> COMPLETED
+[claim] customer=12 key=k_add6c1689c33 LOST -> REPLAY 200
+[claim] customer=13 key=k_088e472f9f14 LOST -> REPLAY 200
+[claim] customer=14 key=k_5e8b4e484dbe LOST -> REPLAY 200
+[claim] customer=17 key=k_59ac38930d8c LOST -> REPLAY 200
+[claim] customer=15 key=k_aff366e0412c LOST -> REPLAY 200
+[claim] customer=16 key=k_0a00955eda4f LOST -> REPLAY 200

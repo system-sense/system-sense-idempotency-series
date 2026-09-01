@@ -1,0 +1,19 @@
+-- our application's books
+ charges | cents  | customers 
+---------+--------+-----------
+      25 | 100000 |        25
+(1 row)
+
+
+-- the payment processor's books
+ charges | cents  | customers 
+---------+--------+-----------
+      25 | 100000 |        25
+(1 row)
+
+
+-- who paid twice
+ customer_id | times_charged | cents 
+-------------+---------------+-------
+(0 rows)
+

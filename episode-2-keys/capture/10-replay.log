@@ -1,0 +1,9 @@
+-- replay: customer 18, one key (k_2aa655ed1c2b), two requests 2000 ms apart
+  A  HTTP 200  in  1.28s  Idempotency-Replayed: false
+  A  body   {"charge_id":109,"processor_charge_id":"ch_a42dedace81d41f9","customer_id":18,"amount_cents":4000}
+  A  sha256 411349a4c8629bca
+  B  HTTP 200  in  0.00s  Idempotency-Replayed: true
+  B  body   {"charge_id":109,"processor_charge_id":"ch_a42dedace81d41f9","customer_id":18,"amount_cents":4000}
+  B  sha256 411349a4c8629bca
+  bodies identical: YES
+RACE replay gap_ms=2000 customer=18 a_status=200 b_status=200 b_replayed=1 bodies_identical=1 a_sha=411349a4c8629bca b_sha=411349a4c8629bca

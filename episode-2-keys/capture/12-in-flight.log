@@ -1,0 +1,9 @@
+-- in_flight: customer 17, one key (k_1c182f13f38f), two requests 3 ms apart
+  A  HTTP 200  in  3.55s  Idempotency-Replayed: false
+  A  body   {"charge_id":111,"processor_charge_id":"ch_e0234b5e20274e79","customer_id":17,"amount_cents":4000}
+  A  sha256 c5eb9a421bd80927
+  B  HTTP 409  in  0.00s  Idempotency-Replayed: false
+  B  body   {"error":{"type":"idempotency_in_flight","message":"the first request with this key is still running"}}
+  B  sha256 c38ff3e1a9ed429f
+  bodies identical: no
+RACE in_flight gap_ms=3 customer=17 a_status=200 b_status=409 b_replayed=0 bodies_identical=0 a_sha=c5eb9a421bd80927 b_sha=c38ff3e1a9ed429f

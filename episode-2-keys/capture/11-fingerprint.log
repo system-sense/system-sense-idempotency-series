@@ -1,0 +1,9 @@
+-- fingerprint: customer 18, one key (k_c41ddbb622f8), two requests 2000 ms apart
+  A  HTTP 200  in  1.29s  Idempotency-Replayed: false
+  A  body   {"charge_id":110,"processor_charge_id":"ch_5333ef4e719d494d","customer_id":18,"amount_cents":4000}
+  A  sha256 2161084d9694bf87
+  B  HTTP 400  in  0.01s  Idempotency-Replayed: false
+  B  body   {"error":{"type":"idempotency_error","message":"This key was first used with a different request body."}}
+  B  sha256 0fdfe2f5e14adbbc
+  bodies identical: no
+RACE fingerprint gap_ms=2000 customer=18 a_status=200 b_status=400 b_replayed=0 bodies_identical=0 a_sha=2161084d9694bf87 b_sha=0fdfe2f5e14adbbc

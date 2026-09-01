@@ -1,0 +1,83 @@
+-- app restarted in mode=late ttl=86400s
+  t=+ 1.50s  customer 18  attempt 1  OK in 1.49s  -> ch_1ca9c48dd8c947ab
+  t=+ 1.56s  customer 1   attempt 1  OK in 1.56s  -> ch_f75358cfa04c47da
+  t=+ 1.63s  customer 19  attempt 1  OK in 1.62s  -> ch_5a03031ddfb34cd3
+  t=+ 1.70s  customer 2   attempt 1  OK in 1.70s  -> ch_324099999fbe4886
+  t=+ 1.77s  customer 20  attempt 1  OK in 1.77s  -> ch_807bcf9a63434417
+  t=+ 1.84s  customer 3   attempt 1  OK in 1.84s  -> ch_b396a01c4a7b449f
+  t=+ 1.90s  customer 21  attempt 1  OK in 1.89s  -> ch_30a90c67642d4703
+  t=+ 1.97s  customer 4   attempt 1  OK in 1.96s  -> ch_fa01fb4065464efd
+  t=+ 2.03s  customer 22  attempt 1  TIMEOUT after 2.02s  (TimeoutError)
+  t=+ 3.88s  customer 22  attempt 2  500 SERVER ERROR  duplicate key value violates unique constraint
+  t=+ 3.88s  customer 22  FAILED  <- the customer is told the payment did not go through
+  t=+ 2.02s  customer 5   attempt 1  TIMEOUT after 2.02s  (TimeoutError)
+  t=+ 3.94s  customer 5   attempt 2  500 SERVER ERROR  duplicate key value violates unique constraint
+  t=+ 3.94s  customer 5   FAILED  <- the customer is told the payment did not go through
+  t=+ 2.03s  customer 23  attempt 1  TIMEOUT after 2.02s  (TimeoutError)
+  t=+ 4.01s  customer 23  attempt 2  500 SERVER ERROR  duplicate key value violates unique constraint
+  t=+ 4.01s  customer 23  FAILED  <- the customer is told the payment did not go through
+  t=+ 2.02s  customer 15  attempt 1  TIMEOUT after 2.02s  (TimeoutError)
+  t=+ 4.03s  customer 15  attempt 2  TIMEOUT after 2.00s  (TimeoutError)
+  t=+ 4.03s  customer 15  FAILED  <- the customer is told the payment did not go through
+  t=+ 2.02s  customer 6   attempt 1  TIMEOUT after 2.02s  (TimeoutError)
+  t=+ 4.03s  customer 6   attempt 2  TIMEOUT after 2.00s  (TimeoutError)
+  t=+ 4.03s  customer 6   FAILED  <- the customer is told the payment did not go through
+  t=+ 2.02s  customer 9   attempt 1  TIMEOUT after 2.02s  (TimeoutError)
+  t=+ 4.03s  customer 9   attempt 2  TIMEOUT after 2.00s  (TimeoutError)
+  t=+ 4.03s  customer 9   FAILED  <- the customer is told the payment did not go through
+  t=+ 2.02s  customer 17  attempt 1  TIMEOUT after 2.02s  (TimeoutError)
+  t=+ 4.03s  customer 17  attempt 2  TIMEOUT after 2.00s  (TimeoutError)
+  t=+ 4.03s  customer 17  FAILED  <- the customer is told the payment did not go through
+  t=+ 2.03s  customer 11  attempt 1  TIMEOUT after 2.02s  (TimeoutError)
+  t=+ 4.03s  customer 11  attempt 2  TIMEOUT after 2.00s  (TimeoutError)
+  t=+ 4.03s  customer 11  FAILED  <- the customer is told the payment did not go through
+  t=+ 2.03s  customer 24  attempt 1  TIMEOUT after 2.02s  (TimeoutError)
+  t=+ 4.03s  customer 24  attempt 2  TIMEOUT after 2.00s  (TimeoutError)
+  t=+ 4.03s  customer 24  FAILED  <- the customer is told the payment did not go through
+  t=+ 2.03s  customer 16  attempt 1  TIMEOUT after 2.02s  (TimeoutError)
+  t=+ 4.03s  customer 16  attempt 2  TIMEOUT after 2.00s  (TimeoutError)
+  t=+ 4.03s  customer 16  FAILED  <- the customer is told the payment did not go through
+  t=+ 2.03s  customer 10  attempt 1  TIMEOUT after 2.02s  (TimeoutError)
+  t=+ 4.03s  customer 10  attempt 2  TIMEOUT after 2.00s  (TimeoutError)
+  t=+ 4.03s  customer 10  FAILED  <- the customer is told the payment did not go through
+  t=+ 2.03s  customer 12  attempt 1  TIMEOUT after 2.02s  (TimeoutError)
+  t=+ 4.03s  customer 12  attempt 2  TIMEOUT after 2.00s  (TimeoutError)
+  t=+ 4.03s  customer 12  FAILED  <- the customer is told the payment did not go through
+  t=+ 2.03s  customer 8   attempt 1  TIMEOUT after 2.02s  (TimeoutError)
+  t=+ 4.03s  customer 8   attempt 2  TIMEOUT after 2.00s  (TimeoutError)
+  t=+ 4.03s  customer 8   FAILED  <- the customer is told the payment did not go through
+  t=+ 2.03s  customer 25  attempt 1  TIMEOUT after 2.02s  (TimeoutError)
+  t=+ 4.03s  customer 25  attempt 2  TIMEOUT after 2.00s  (TimeoutError)
+  t=+ 4.03s  customer 25  FAILED  <- the customer is told the payment did not go through
+  t=+ 2.03s  customer 14  attempt 1  TIMEOUT after 2.02s  (TimeoutError)
+  t=+ 4.03s  customer 14  attempt 2  TIMEOUT after 2.00s  (TimeoutError)
+  t=+ 4.03s  customer 14  FAILED  <- the customer is told the payment did not go through
+  t=+ 2.03s  customer 7   attempt 1  TIMEOUT after 2.02s  (TimeoutError)
+  t=+ 4.03s  customer 7   attempt 2  TIMEOUT after 2.00s  (TimeoutError)
+  t=+ 4.03s  customer 7   FAILED  <- the customer is told the payment did not go through
+  t=+ 2.03s  customer 13  attempt 1  TIMEOUT after 2.02s  (TimeoutError)
+  t=+ 4.03s  customer 13  attempt 2  TIMEOUT after 2.00s  (TimeoutError)
+  t=+ 4.03s  customer 13  FAILED  <- the customer is told the payment did not go through
+DRIVER checkouts=25 requests=42 timeouts=31 conflict_polls=0 replays=0 server_errors=3 failed=17 owed_cents=100000 client_timeout_ms=2000 amount_cents=4000 concurrent=1
+RESULT late app_charges=42 app_cents=168000 processor_charges=42 collected_cents=168000 double_charged_customers=17 duplicate_charges=17 duplicated_keys=0
+-- who paid twice, WITH the constraint the database enforced
+ customer_id | times_charged | cents 
+-------------+---------------+-------
+           5 |             2 |  8000
+           6 |             2 |  8000
+           7 |             2 |  8000
+           8 |             2 |  8000
+           9 |             2 |  8000
+          10 |             2 |  8000
+          11 |             2 |  8000
+          12 |             2 |  8000
+          13 |             2 |  8000
+          14 |             2 |  8000
+(10 rows)
+
+
+-- duplicate rows in idempotency_keys (the constraint held: there are none)
+0
+
+-- the database refused the second insert this many times
+REFUSALS late count=17

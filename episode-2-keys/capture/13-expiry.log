@@ -1,0 +1,19 @@
+-- app restarted in mode=claim ttl=2s
+-- expired: customer 18, one key (k_8ad07c702fc1), two requests 3000 ms apart
+  A  HTTP 200  in  1.30s  Idempotency-Replayed: false
+  A  body   {"charge_id":112,"processor_charge_id":"ch_f9ab725c2eff4ddb","customer_id":18,"amount_cents":4000}
+  A  sha256 b00f83f6d651ed6b
+  B  HTTP 200  in  1.28s  Idempotency-Replayed: false
+  B  body   {"charge_id":113,"processor_charge_id":"ch_523dacb780e1490a","customer_id":18,"amount_cents":4000}
+  B  sha256 ba366e7cc5ae53d4
+  bodies identical: no
+RACE expired gap_ms=3000 customer=18 a_status=200 b_status=200 b_replayed=0 bodies_identical=0 a_sha=b00f83f6d651ed6b b_sha=ba366e7cc5ae53d4
+
+-- what the processor's books say about that customer
+         id          | customer_id | amount_cents | captured_at  
+---------------------+-------------+--------------+--------------
+ ch_f9ab725c2eff4ddb |          18 |         4000 | 15:00:10.184
+ ch_523dacb780e1490a |          18 |         4000 | 15:00:13.176
+(2 rows)
+
+EXPIRY ttl_seconds=2 processor_charges=2
