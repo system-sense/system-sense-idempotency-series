@@ -84,6 +84,14 @@ wait_healthy
   echo "processor latency = LATENCY_BASE_MS + (customer_id * 137) % LATENCY_SPREAD_MS"
   dc exec -T processor printenv LATENCY_BASE_MS LATENCY_SPREAD_MS | tr '\n' ' '
   echo
+  # The other timeout in the system, and the one nobody thinks about: how long
+  # OUR service is willing to wait on the processor. It is deliberately far
+  # longer than the client's, so that when a checkout fails it is always the
+  # client that gave up first. Recorded here because a figure on screen has to
+  # come from the run that produced it.
+  printf 'app processor timeout = '
+  dc exec -T app printenv PROCESSOR_TIMEOUT_SECONDS | tr -d '\r'
+  echo
 } >> "$OUT/01-compose-up.log"
 
 log "3/7  One customer, one press of Pay, and the processor answers in time"

@@ -93,6 +93,24 @@ up = text("01-compose-up.log")
 lat = re.findall(r"^(\d+) (\d+)\s*$", up, re.M)
 base, spread = (int(lat[-1][0]), int(lat[-1][1])) if lat else (0, 0)
 
+
+def app_processor_timeout_s() -> float:
+    """How long our own service waits on the processor.
+
+    Read back from the running container when the run recorded it. Captures
+    taken before that line existed fall back to docker-compose.yml, which is
+    committed next to them and is what those runs were configured with.
+    """
+    m = re.search(r"app processor timeout = ([\d.]+)", up)
+    if m:
+        return float(m.group(1))
+    compose = pathlib.Path("docker-compose.yml")
+    if compose.exists():
+        m = re.search(r'PROCESSOR_TIMEOUT_SECONDS:\s*"?([\d.]+)"?', compose.read_text())
+        if m:
+            return float(m.group(1))
+    return 0.0
+
 # ── Methods the spec calls idempotent ──────────────────────────────────────
 methods = text("06-idempotent-methods.log")
 
@@ -129,6 +147,7 @@ slow["processor_latency_ms"] = latency_for(slow["customer_id"])
 metrics = {
     "scenario": {
         "client_timeout_ms": driver_any.get("client_timeout_ms", 0),
+        "app_processor_timeout_s": app_processor_timeout_s(),
         "amount_cents": driver_any.get("amount_cents", 0),
         "amount_dollars": dollars(driver_any.get("amount_cents", 0)),
         "max_attempts": 2,
