@@ -161,4 +161,5 @@ condition in it.
 ---
 
 Part of the **System Sense — Idempotency** mini-series.
+Full playlist: https://www.youtube.com/playlist?list=PLMlexv0Ndaog
 Previous series: [Caching](https://github.com/system-sense/system-sense-caching-series).

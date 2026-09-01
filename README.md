@@ -19,6 +19,8 @@ Caching series, with Redis added in Episode 3 where it earns its place.
 
 ## Watch
 
+Full playlist: https://www.youtube.com/playlist?list=PLMlexv0Ndaog
+
 Episode 1 — *The Retry That Charged Your Customer Twice* (https://www.youtube.com/watch?v=KE7CCnTfQqk)
 
 Each episode's folder here is the demo from that video, and every figure quoted
