@@ -3,6 +3,8 @@
 A runnable demonstration that **a timeout is not a failure**. The request
 succeeded. Only the response was lost. Retrying it charges the customer again.
 
+**Watch the episode:** https://www.youtube.com/watch?v=KE7CCnTfQqk
+
 ```bash
 docker compose up --build
 ```
