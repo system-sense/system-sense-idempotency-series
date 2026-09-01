@@ -63,6 +63,13 @@ CREATE INDEX charges_key_idx      ON charges (idempotency_key);
 -- skip. Declining to repeat the work is not enough: the retry has to be given
 -- the SAME answer the first request got. A 200 with an empty body has still
 -- broken the caller.
+--
+-- The body is TEXT and not JSONB, which looks like a mistake and is not. JSONB
+-- parses and re-serialises: it drops key order, and what comes back out is the
+-- same VALUES in a different arrangement. That is not the same response, and a
+-- client that hashes a webhook body or compares it to what it sent will say so.
+-- Store the bytes you sent. Measured while building this: the first cut of
+-- this demo used JSONB and its replay failed a byte comparison.
 CREATE TABLE idempotency_keys (
     id                  BIGSERIAL PRIMARY KEY,
     scope               TEXT        NOT NULL,
@@ -70,7 +77,7 @@ CREATE TABLE idempotency_keys (
     request_fingerprint TEXT        NOT NULL,
     status              TEXT        NOT NULL CHECK (status IN ('in_flight', 'completed')),
     response_status     INT,
-    response_body       JSONB,
+    response_body       TEXT,
     created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
     completed_at        TIMESTAMPTZ,
     expires_at          TIMESTAMPTZ NOT NULL

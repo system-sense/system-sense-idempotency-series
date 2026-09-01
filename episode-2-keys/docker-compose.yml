@@ -17,7 +17,7 @@ services:
       retries: 60
 
   # ─────────────────────────────────────────────────────────────────────────
-  #  THE KNOB.
+  #  EPISODE 1'S KNOB, unchanged.
   #
   #  How slow the payment processor is. Latency for a given customer is
   #
@@ -46,12 +46,33 @@ services:
       postgres:
         condition: service_healthy
 
+  # ─────────────────────────────────────────────────────────────────────────
+  #  EPISODE 2'S KNOB.
+  #
+  #  How this service treats the Idempotency-Key header:
+  #
+  #      off     Episode 1. The header is read and ignored.
+  #      naive   SELECT the key, do the work, INSERT the key. No constraint.
+  #      late    The same handler, WITH the UNIQUE constraint. One line of DDL
+  #              apart, and it fires after the money has already moved.
+  #      claim   INSERT the key first, ON CONFLICT DO NOTHING. The fix.
+  #
+  #  Run the fixed version, then break it again without touching a line of
+  #  application code:
+  #
+  #      IDEMPOTENCY_MODE=naive docker compose up
+  #
+  #  The app asserts the UNIQUE index into or out of existence at boot, so the
+  #  mode always matches the schema it is running against.
+  # ─────────────────────────────────────────────────────────────────────────
   app:
     build: .
     environment:
       DATABASE_URL: "postgres://sysense:sysense@postgres:5432/sysense"
       PROCESSOR_URL: "http://processor:9000"
       PROCESSOR_TIMEOUT_SECONDS: "30"
+      IDEMPOTENCY_MODE: "${IDEMPOTENCY_MODE:-claim}"
+      IDEMPOTENCY_TTL_SECONDS: "${IDEMPOTENCY_TTL_SECONDS:-86400}"
     ports:
       - "8000:8000"
     depends_on:
