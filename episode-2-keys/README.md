@@ -224,7 +224,7 @@ Episode 3.
 
 | Path | What it is |
 | --- | --- |
-| `app/main.py` | the three handlers. Fifteen lines separate the broken one from the fix. |
+| `app/main.py` | the three handlers. One statement moved separates the broken one from the fix. |
 | `db/init.sql` | the column and the constraint Episode 1 shipped without |
 | `scripts/checkout.py` | the client — one key per press of Pay, fired concurrently |
 | `scripts/race.py` | two requests, one key, a measured distance apart |
