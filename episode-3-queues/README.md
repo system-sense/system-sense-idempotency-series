@@ -193,16 +193,24 @@ error.
 ## The eight lines the episode is about
 
 All of it is in [`worker/main.py`](worker/main.py), and the fork is two `XACK`
-calls in one function:
+calls. In the read loop, before any work has happened:
 
 ```python
-if ACK_MODE == "before":
-    await r.xack(STREAM, GROUP, *[mid for mid, _ in batch])   # at-most-once
+if ACK_MODE == "before":                                      # at-most-once
+    await r.xack(STREAM, GROUP, *[mid for mid, _ in batch])
 for mid, fields in batch:
     await handle(r, mid, fields, claimed)
-    if ACK_MODE == "after":
-        await r.xack(STREAM, GROUP, mid)                      # at-least-once
 ```
+
+and at the end of `handle`, reached only if the work actually succeeded:
+
+```python
+if ACK_MODE == "after":                                       # at-least-once
+    await r.xack(STREAM, GROUP, mid)
+```
+
+That second one is not reached when the handler throws, which is what turns a
+failure into a redelivery rather than a silent drop.
 
 And the loop above it, which is the visibility timeout made visible:
 
