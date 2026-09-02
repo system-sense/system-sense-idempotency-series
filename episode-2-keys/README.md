@@ -8,6 +8,8 @@ adding the missing `UNIQUE` constraint does not work either, and that the
 difference between the version that fails and the version that works is where
 the `INSERT` goes — not whether there is one.
 
+**Watch the episode:** https://www.youtube.com/watch?v=g19jax6Auxc
+
 ```bash
 docker compose up --build
 ```

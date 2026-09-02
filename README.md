@@ -13,7 +13,7 @@ Caching series, with Redis added in Episode 3 where it earns its place.
 | Episode | Folder | Thesis | State |
 | --- | --- | --- | --- |
 | 1. The Retry That Charged Your Customer Twice | [`episode-1-duplicates/`](episode-1-duplicates/) | A timeout is not a failure. The request succeeded; only the response was lost. | [**watch**](https://www.youtube.com/watch?v=KE7CCnTfQqk) |
-| 2. Your Idempotency Key Has a Race Condition | [`episode-2-keys/`](episode-2-keys/) | "Check, then insert" is TOCTOU, and the `UNIQUE` constraint only helps if you claim the key before you do the work. | demo built |
+| 2. Your Idempotency Key Has a Race Condition | [`episode-2-keys/`](episode-2-keys/) | "Check, then insert" is TOCTOU, and the `UNIQUE` constraint only helps if you claim the key before you do the work. | [**watch**](https://www.youtube.com/watch?v=g19jax6Auxc) |
 | 3. 3 Ways Your Queue Silently Loses Work | `episode-3-queues/` | Visibility timeouts, poison messages, dead-letter queues. | not built |
 | 4. Exactly-Once Delivery Is a Lie | `episode-4-outbox/` | Exactly-once *delivery* is impossible. Exactly-once *effects* are not. | not built |
 
@@ -22,6 +22,8 @@ Caching series, with Redis added in Episode 3 where it earns its place.
 Full playlist: https://www.youtube.com/playlist?list=PLMlexv0Ndaog
 
 Episode 1 — *The Retry That Charged Your Customer Twice* (https://www.youtube.com/watch?v=KE7CCnTfQqk)
+
+Episode 2 — *Your Idempotency Key Has a Race Condition* (https://www.youtube.com/watch?v=g19jax6Auxc)
 
 Each episode's folder here is the demo from that video, and every figure quoted
 on screen is reproducible from it.
