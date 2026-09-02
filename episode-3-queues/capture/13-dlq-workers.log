@@ -1,0 +1,19 @@
+[worker-2] ack=before visibility_timeout=2000ms heartbeat=0 max_deliveries=0 idempotent_consumer=0 batch=5
+[worker-1] created consumer group payments on checkouts
+[worker-1] ack=after visibility_timeout=2000ms heartbeat=0 max_deliveries=5 idempotent_consumer=0 batch=1
+[worker-1] NEW    1788374028315-0 seq=1 customer=0 delivery=1
+[worker-1] FAILED  1788374028315-0 seq=1 delivery=1 left pending (ValueError: amount_cents=-1 is not a payment)
+[worker-1] NEW    1788374028316-0 seq=2 customer=18 delivery=1
+[worker-1] CHARGED 1788374028316-0 seq=2 customer=18 ch_3367155854ed4758 in 1.28s
+[worker-1] NEW    1788374028316-1 seq=3 customer=19 delivery=1
+[worker-1] CHARGED 1788374028316-1 seq=3 customer=19 ch_00b7d84da3cb48d0 in 1.43s
+[worker-1] CLAIM  1788374028315-0 seq=1 customer=0 delivery=2  (idle > 2000 ms)
+[worker-1] FAILED  1788374028315-0 seq=1 delivery=2 left pending (ValueError: amount_cents=-1 is not a payment)
+[worker-1] NEW    1788374028316-2 seq=4 customer=20 delivery=1
+[worker-1] CHARGED 1788374028316-2 seq=4 customer=20 ch_467d2835d3ad4b0d in 1.56s
+[worker-1] CLAIM  1788374028315-0 seq=1 customer=0 delivery=3  (idle > 2000 ms)
+[worker-1] FAILED  1788374028315-0 seq=1 delivery=3 left pending (ValueError: amount_cents=-1 is not a payment)
+[worker-1] CLAIM  1788374028315-0 seq=1 customer=0 delivery=4  (idle > 2000 ms)
+[worker-1] FAILED  1788374028315-0 seq=1 delivery=4 left pending (ValueError: amount_cents=-1 is not a payment)
+[worker-1] CLAIM  1788374028315-0 seq=1 customer=0 delivery=5  (idle > 2000 ms)
+[worker-1] DEAD    1788374028315-0 seq=1 after 5 deliveries -> checkouts:dead  (ValueError: amount_cents=-1 is not a payment)

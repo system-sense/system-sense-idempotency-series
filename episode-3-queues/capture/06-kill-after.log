@@ -1,0 +1,59 @@
+  XADD seq=1   1788373949406-0  customer 17  key=k_9f4682426d0f
+  XADD seq=2   1788373949406-1  customer 16  key=k_889b3bfef65a
+  XADD seq=3   1788373949407-0  customer 15  key=k_02927b19fc03
+  XADD seq=4   1788373949407-1  customer 14  key=k_1ec1be1e1f40
+  XADD seq=5   1788373949407-2  customer 13  key=k_18dd72259195
+ENQUEUED label=kill_after messages=5 payable=5 poison=0 owed_cents=20000 amount_cents=4000
+-- five jobs waiting, nobody consuming. One worker starts and takes all five.
+-- worker-1 up  (ack=after visibility=2000ms heartbeat=0 max_deliveries=0 key=0 batch=5)
+-- it is now 1.5 s into the first of them, a 3.5 s payment.
+ Container episode-3-queues-worker-1-1 Killing 
+ Container episode-3-queues-worker-1-1 Killed 
+KILL kill_after worker=worker-1 at_seconds=1.5 batch=5
+-- kill_after-after-the-kill
+   stream length      5   (a log: acknowledging does not shorten it)
+   never delivered    0   <- work waiting
+   pending            5   <- delivered, not acknowledged
+   consumers          1
+   dead-letter depth  0
+   XPENDING:
+      entry                held by      idle ms  deliveries
+      1788373949406-0      worker-1        3323           1
+      1788373949406-1      worker-1        3323           1
+      1788373949407-0      worker-1        3323           1
+      1788373949407-1      worker-1        3323           1
+      1788373949407-2      worker-1        3323           1
+QUEUE kill_after-after-the-kill length=5 lag=0 pending=5 dlq=0 consumers=1
+
+-- starting worker-2. Nothing about it knows a worker died.
+-- worker-2 up  (ack=after visibility=2000ms heartbeat=0 max_deliveries=0 key=0 batch=5)
+-- kill_after-finished
+   stream length      5   (a log: acknowledging does not shorten it)
+   never delivered    0   <- work waiting
+   pending            0   <- delivered, not acknowledged
+   consumers          2
+   dead-letter depth  0
+QUEUE kill_after-finished length=5 lag=0 pending=0 dlq=0 consumers=2
+
+-- the processor's books
+ customer_id | times_charged | cents 
+-------------+---------------+-------
+          13 |             1 |  4000
+          14 |             1 |  4000
+          15 |             1 |  4000
+          16 |             1 |  4000
+          17 |             2 |  8000
+(5 rows)
+
+-- what the queue did, delivery by delivery
+ seq | customer_id |  worker  | delivery | claimed | outcome 
+-----+-------------+----------+----------+---------+---------
+   1 |          17 | worker-1 |        1 | f       | started
+   1 |          17 | worker-2 |        2 | t       | charged
+   2 |          16 | worker-2 |        2 | t       | charged
+   3 |          15 | worker-2 |        2 | t       | charged
+   4 |          14 | worker-2 |        2 | t       | charged
+   5 |          13 | worker-2 |        2 | t       | charged
+(6 rows)
+
+RESULT kill_after messages_enqueued=5 app_charges=6 app_cents=24000 processor_charges=6 collected_cents=24000 double_charged_customers=1 duplicate_charges=1 deliveries=6 messages_delivered=5 jobs_run_twice=1 redeliveries=1 jobs_never_attempted=0 unfinished_runs=1 replays=0 failed_runs=0

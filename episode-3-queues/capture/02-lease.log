@@ -1,0 +1,61 @@
+-- worker-1 worker-2 up  (ack=after visibility=2000ms heartbeat=0 max_deliveries=0 key=0 batch=1)
+  XADD seq=1   1788373859597-0  customer 1  key=k_34399a0e03b8
+  XADD seq=2   1788373859597-1  customer 2  key=k_345858f8e165
+  XADD seq=3   1788373859597-2  customer 3  key=k_716087cad409
+  XADD seq=4   1788373859597-3  customer 4  key=k_813a5983a27e
+  XADD seq=5   1788373859598-0  customer 5  key=k_d7dd4e632caa
+  XADD seq=6   1788373859598-1  customer 6  key=k_9788d4f9ba26
+  XADD seq=7   1788373859598-2  customer 7  key=k_d110729c3c3f
+  XADD seq=8   1788373859598-3  customer 8  key=k_6412d1a2e2d5
+  XADD seq=9   1788373859598-4  customer 9  key=k_01941260a9fa
+  XADD seq=10  1788373859598-5  customer 10  key=k_31fd871084d9
+  XADD seq=11  1788373859598-6  customer 11  key=k_e0fc4835c95a
+  XADD seq=12  1788373859599-0  customer 12  key=k_3c26275a73df
+  XADD seq=13  1788373859599-1  customer 13  key=k_2f34a052a738
+  XADD seq=14  1788373859599-2  customer 14  key=k_277a7408211e
+  XADD seq=15  1788373859599-3  customer 15  key=k_a30f994de4f1
+  XADD seq=16  1788373859599-4  customer 16  key=k_e9a3dd9db19f
+  XADD seq=17  1788373859599-5  customer 17  key=k_0cd7d57528d3
+  XADD seq=18  1788373859599-6  customer 18  key=k_af28f451623d
+  XADD seq=19  1788373859599-7  customer 19  key=k_2d7296bee374
+  XADD seq=20  1788373859600-0  customer 20  key=k_cdfad1b21752
+  XADD seq=21  1788373859600-1  customer 21  key=k_6d6ae612b387
+  XADD seq=22  1788373859600-2  customer 22  key=k_c7ee89ef5297
+  XADD seq=23  1788373859600-3  customer 23  key=k_b3fce33f6ffb
+  XADD seq=24  1788373859600-4  customer 24  key=k_ca4e508d02df
+  XADD seq=25  1788373859600-5  customer 25  key=k_15f947a7b6e7
+ENQUEUED label=lease messages=25 payable=25 poison=0 owed_cents=100000 amount_cents=4000
+-- lease-finished
+   stream length      25   (a log: acknowledging does not shorten it)
+   never delivered    0   <- work waiting
+   pending            0   <- delivered, not acknowledged
+   consumers          2
+   dead-letter depth  0
+QUEUE lease-finished length=25 lag=0 pending=0 dlq=0 consumers=2
+
+-- messages handed to more than one worker
+ seq | customer_id | deliveries |       workers       
+-----+-------------+------------+---------------------
+  12 |          12 |          2 | worker-1 + worker-2
+  13 |          13 |          2 | worker-1 + worker-2
+  14 |          14 |          2 | worker-1 + worker-2
+  15 |          15 |          2 | worker-1 + worker-2
+  16 |          16 |          2 | worker-1 + worker-2
+  17 |          17 |          2 | worker-1 + worker-2
+  25 |          25 |          2 | worker-1 + worker-2
+(7 rows)
+
+
+-- who paid twice
+ customer_id | times_charged | cents 
+-------------+---------------+-------
+          12 |             2 |  8000
+          13 |             2 |  8000
+          14 |             2 |  8000
+          15 |             2 |  8000
+          16 |             2 |  8000
+          17 |             2 |  8000
+          25 |             2 |  8000
+(7 rows)
+
+RESULT lease messages_enqueued=25 app_charges=32 app_cents=128000 processor_charges=32 collected_cents=128000 double_charged_customers=7 duplicate_charges=7 deliveries=32 messages_delivered=25 jobs_run_twice=7 redeliveries=7 jobs_never_attempted=0 unfinished_runs=0 replays=0 failed_runs=0

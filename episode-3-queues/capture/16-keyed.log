@@ -1,0 +1,51 @@
+-- worker-1 worker-2 up  (ack=after visibility=2000ms heartbeat=0 max_deliveries=0 key=1 batch=1)
+  XADD seq=1   1788374096760-0  customer 1  key=k_5377de621221
+  XADD seq=2   1788374096760-1  customer 2  key=k_b51b8aca82be
+  XADD seq=3   1788374096760-2  customer 3  key=k_f1b6f679e404
+  XADD seq=4   1788374096760-3  customer 4  key=k_8cc6f5382123
+  XADD seq=5   1788374096761-0  customer 5  key=k_ae9d7b1ab297
+  XADD seq=6   1788374096761-1  customer 6  key=k_72edff05c0f1
+  XADD seq=7   1788374096761-2  customer 7  key=k_acba834905d8
+  XADD seq=8   1788374096761-3  customer 8  key=k_44d22cd505b6
+  XADD seq=9   1788374096761-4  customer 9  key=k_0e94d485a4a3
+  XADD seq=10  1788374096762-0  customer 10  key=k_cdd534993639
+  XADD seq=11  1788374096762-1  customer 11  key=k_0031b1996e4c
+  XADD seq=12  1788374096762-2  customer 12  key=k_655203bfe700
+  XADD seq=13  1788374096762-3  customer 13  key=k_7ba3540fe7a1
+  XADD seq=14  1788374096762-4  customer 14  key=k_d2c03565f1e4
+  XADD seq=15  1788374096763-0  customer 15  key=k_e7ee034e22ec
+  XADD seq=16  1788374096763-1  customer 16  key=k_1d1bdfab03b7
+  XADD seq=17  1788374096763-2  customer 17  key=k_8dc1209cb802
+  XADD seq=18  1788374096763-3  customer 18  key=k_ccee543d4934
+  XADD seq=19  1788374096763-4  customer 19  key=k_6fe999469b12
+  XADD seq=20  1788374096763-5  customer 20  key=k_71bc82e9f1bc
+  XADD seq=21  1788374096763-6  customer 21  key=k_f62f6950f8f9
+  XADD seq=22  1788374096764-0  customer 22  key=k_c1514db7ec62
+  XADD seq=23  1788374096764-1  customer 23  key=k_a961f1644f6d
+  XADD seq=24  1788374096764-2  customer 24  key=k_f04a88af1ca3
+  XADD seq=25  1788374096764-3  customer 25  key=k_ce089dc13ba4
+ENQUEUED label=keyed messages=25 payable=25 poison=0 owed_cents=100000 amount_cents=4000
+-- keyed-finished
+   stream length      25   (a log: acknowledging does not shorten it)
+   never delivered    0   <- work waiting
+   pending            0   <- delivered, not acknowledged
+   consumers          2
+   dead-letter depth  0
+QUEUE keyed-finished length=25 lag=0 pending=0 dlq=0 consumers=2
+
+-- messages STILL handed to more than one worker. The queue did not improve.
+ seq | customer_id | deliveries |       outcomes        
+-----+-------------+------------+-----------------------
+  12 |          12 |          2 | charged then replayed
+  14 |          14 |          2 | charged then replayed
+  16 |          16 |          2 | charged then replayed
+  17 |          17 |          2 | charged then replayed
+(4 rows)
+
+
+-- who paid twice
+ customer_id | times_charged 
+-------------+---------------
+(0 rows)
+
+RESULT keyed messages_enqueued=25 app_charges=25 app_cents=100000 processor_charges=25 collected_cents=100000 double_charged_customers=0 duplicate_charges=0 deliveries=29 messages_delivered=25 jobs_run_twice=4 redeliveries=4 jobs_never_attempted=0 unfinished_runs=0 replays=4 failed_runs=0

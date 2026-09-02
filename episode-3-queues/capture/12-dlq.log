@@ -1,0 +1,82 @@
+-- worker-1 up  (ack=after visibility=2000ms heartbeat=0 max_deliveries=5 key=0 batch=1)
+  XADD seq=1   1788374028315-0  POISON  key=k_7da77bc79278
+  XADD seq=2   1788374028316-0  customer 18  key=k_b9465843e84d
+  XADD seq=3   1788374028316-1  customer 19  key=k_6407a18f5313
+  XADD seq=4   1788374028316-2  customer 20  key=k_ee0e2921b554
+ENQUEUED label=dlq messages=4 payable=3 poison=1 owed_cents=12000 amount_cents=4000
+-- dead-letter watch, 30s   (threshold: one message)
+   t=+  0.0s  dead-letter depth 0   pending 2
+   t=+  1.0s  dead-letter depth 0   pending 2
+   t=+  2.0s  dead-letter depth 0   pending 2
+   t=+  3.0s  dead-letter depth 0   pending 2
+   t=+  4.1s  dead-letter depth 0   pending 2
+   t=+  5.1s  dead-letter depth 0   pending 1
+   t=+  6.1s  dead-letter depth 0   pending 1
+   t=+  7.1s  dead-letter depth 0   pending 1
+   t=+  8.1s  dead-letter depth 0   pending 1
+   t=+  9.1s  dead-letter depth 0   pending 1
+   t=+ 10.1s  dead-letter depth 1   pending 0   *** ALERT: work this system accepted will never be done ***
+   t=+ 11.1s  dead-letter depth 1   pending 0
+   t=+ 12.1s  dead-letter depth 1   pending 0
+   t=+ 13.1s  dead-letter depth 1   pending 0
+   t=+ 14.1s  dead-letter depth 1   pending 0
+   t=+ 15.2s  dead-letter depth 1   pending 0
+   t=+ 16.2s  dead-letter depth 1   pending 0
+   t=+ 17.2s  dead-letter depth 1   pending 0
+   t=+ 18.2s  dead-letter depth 1   pending 0
+   t=+ 19.2s  dead-letter depth 1   pending 0
+   t=+ 20.2s  dead-letter depth 1   pending 0
+   t=+ 21.2s  dead-letter depth 1   pending 0
+   t=+ 22.2s  dead-letter depth 1   pending 0
+   t=+ 23.2s  dead-letter depth 1   pending 0
+   t=+ 24.3s  dead-letter depth 1   pending 0
+   t=+ 25.3s  dead-letter depth 1   pending 0
+   t=+ 26.3s  dead-letter depth 1   pending 0
+   t=+ 27.3s  dead-letter depth 1   pending 0
+   t=+ 28.3s  dead-letter depth 1   pending 0
+   t=+ 29.3s  dead-letter depth 1   pending 0
+DLQWATCH dlq seconds=30 samples=30 max_depth=1 first_alert_s=10.1
+
+-- dlq-finished
+   stream length      4   (a log: acknowledging does not shorten it)
+   never delivered    0   <- work waiting
+   pending            0   <- delivered, not acknowledged
+   consumers          1
+   dead-letter depth  1
+QUEUE dlq-finished length=4 lag=0 pending=0 dlq=1 consumers=1
+
+-- what is in the dead-letter stream, and why
+1788374037927-0
+seq
+1
+customer_id
+0
+amount_cents
+-1
+key
+k_7da77bc79278
+fail_times
+0
+enqueued_at
+1788374028.313
+failed_after_deliveries
+5
+error
+ValueError: amount_cents=-1 is not a payment
+worker
+worker-1
+
+ seq | customer_id | delivery | outcome |                    detail                    
+-----+-------------+----------+---------+----------------------------------------------
+   1 |           0 |        1 | failed  | ValueError: amount_cents=-1 is not a payment
+   2 |          18 |        1 | charged | ch_3367155854ed4758
+   3 |          19 |        1 | charged | ch_00b7d84da3cb48d0
+   1 |           0 |        2 | failed  | ValueError: amount_cents=-1 is not a payment
+   4 |          20 |        1 | charged | ch_467d2835d3ad4b0d
+   1 |           0 |        3 | failed  | ValueError: amount_cents=-1 is not a payment
+   1 |           0 |        4 | failed  | ValueError: amount_cents=-1 is not a payment
+   1 |           0 |        5 | failed  | ValueError: amount_cents=-1 is not a payment
+(8 rows)
+
+DLQ deliveries_before_dlq=5 seconds_to_dlq=9.6 depth=1
+RESULT dlq messages_enqueued=4 app_charges=3 app_cents=12000 processor_charges=3 collected_cents=12000 double_charged_customers=0 duplicate_charges=0 deliveries=8 messages_delivered=4 jobs_run_twice=1 redeliveries=4 jobs_never_attempted=0 unfinished_runs=0 replays=0 failed_runs=5

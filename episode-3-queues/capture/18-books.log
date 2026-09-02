@@ -1,0 +1,18 @@
+-- what the queue did
+ deliveries | messages | redeliveries | replays 
+------------+----------+--------------+---------
+         29 |       25 |            4 |       4
+(1 row)
+
+-- what our application believes
+ charges | cents  | customers 
+---------+--------+-----------
+      25 | 100000 |        25
+(1 row)
+
+-- what actually happened to money
+ charges | cents  | customers 
+---------+--------+-----------
+      25 | 100000 |        25
+(1 row)
+

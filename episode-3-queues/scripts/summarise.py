@@ -1,16 +1,25 @@
 """Turns the raw capture logs into capture/metrics.json.
 
-Episode 1 measured one thing: money owed against money collected. This episode
-measures that same pair three times over, against three handlers that were
-given the identical load, and the story is in how little the first two changed
-it:
+Episode 1 measured money owed against money collected. Episode 2 measured the
+same pair three times against three handlers. This episode measures it against
+one handler — Episode 2's, unchanged and still correct — and varies only the
+consumer in front of it.
 
-    naive   the obvious fix, no constraint     -> the duplicates survive
-    late    the identical handler, constrained -> the duplicates survive, loudly
-    claim   the key claimed before the work    -> one charge each
+That is the point, so it is also the shape of this file: every scenario reads
+the same three books, and the story is which of them disagree.
 
-Plus the two things the money cannot tell you: whether the retry got the SAME
-answer as the request it was retrying, and what happens when a key expires.
+    lease        the lease expires mid-job          -> jobs run twice
+    heartbeat    the lease is held                  -> they stop
+    kill_after   a worker dies, ack after the work  -> one job runs twice
+    kill_before  the same death, ack before         -> four jobs vanish
+    poison       a message that can never succeed   -> forever, and silently
+    dlq          the same, with a delivery limit    -> depth becomes a signal
+    ordering     one message fails once             -> it finishes last
+    keyed        the lease scenario, key on         -> redelivered, charged once
+
+The last one is the payoff and it is the reason `job_runs` exists. Money alone
+cannot tell that scenario from a queue that stopped misbehaving, and the queue
+did not stop misbehaving.
 """
 import json
 import pathlib
@@ -24,11 +33,11 @@ def text(name: str) -> str:
     return p.read_text() if p.exists() else ""
 
 
-def kv(line_prefix: str, body: str) -> dict:
+def kv(prefix: str, body: str) -> dict:
     """Parse the last `PREFIX k=v k=v ...` line in a log. Ints and floats."""
     found = {}
     for line in body.splitlines():
-        if line.startswith(line_prefix):
+        if line.startswith(prefix):
             found = {}
             for k, v in re.findall(r"(\w+)=(-?[\d.]+)", line):
                 found[k] = float(v) if "." in v else int(v)
@@ -40,129 +49,162 @@ def dollars(cents: int) -> str:
 
 
 def run(log: str, name: str) -> dict:
-    """One fleet run: what was asked for, and what the money actually did."""
+    """One scenario: what was published, what the queue did, what the money did."""
     body = text(log)
-    driver = kv("DRIVER", body)
-    result = kv(f"RESULT {name}", body)
-    owed = driver.get("owed_cents", 0)
-    collected = result.get("collected_cents", 0)
+    sent = kv(f"ENQUEUED label={name} ", body)
+    got = kv(f"RESULT {name} ", body)
+
+    owed = sent.get("owed_cents", 0)
+    collected = got.get("collected_cents", 0)
+    enqueued = got.get("messages_enqueued", sent.get("messages", 0))
+
     r = {
-        "mode": name,
-        "checkouts": driver.get("checkouts", 0),
-        "requests_sent": driver.get("requests", 0),
-        "timeouts": driver.get("timeouts", 0),
-        "conflict_polls": driver.get("conflict_polls", 0),
-        "replays": driver.get("replays", 0),
-        "server_errors_seen_by_client": driver.get("server_errors", 0),
-        "checkouts_reported_failed": driver.get("failed", 0),
-        "app_charges": result.get("app_charges", 0),
-        "processor_charges": result.get("processor_charges", 0),
+        "scenario": name,
+        "messages_published": enqueued,
+        "payable_messages": sent.get("payable", enqueued),
+        "poison_messages": sent.get("poison", 0),
+
+        # What the queue did. `deliveries` counts handovers, not jobs.
+        "deliveries": got.get("deliveries", 0),
+        "messages_delivered": got.get("messages_delivered", 0),
+        "jobs_run_twice": got.get("jobs_run_twice", 0),
+        "redeliveries": got.get("redeliveries", 0),
+        "jobs_never_attempted": got.get("jobs_never_attempted", 0),
+        "unfinished_runs": got.get("unfinished_runs", 0),
+        "failed_runs": got.get("failed_runs", 0),
+        "replays": got.get("replays", 0),
+
+        # What the money did.
+        "app_charges": got.get("app_charges", 0),
+        "processor_charges": got.get("processor_charges", 0),
+        "double_charged_customers": got.get("double_charged_customers", 0),
+        "duplicate_charges": got.get("duplicate_charges", 0),
         "owed_cents": owed,
         "collected_cents": collected,
-        "overcharge_cents": collected - owed,
-        "double_charged_customers": result.get("double_charged_customers", 0),
-        "duplicate_charges": result.get("duplicate_charges", 0),
-        "duplicated_keys": result.get("duplicated_keys", 0),
     }
-    r["duplicate_rate_pct"] = round(100 * r["double_charged_customers"] / r["checkouts"], 1) if r["checkouts"] else 0.0
-    r["overcharge_pct"] = round(100 * r["overcharge_cents"] / owed, 1) if owed else 0.0
-    r["owed_dollars"] = dollars(r["owed_cents"])
-    r["collected_dollars"] = dollars(r["collected_cents"])
+
+    # Money moved twice, and money that was published and never moved at all.
+    # Both are failures; only one of them has anybody watching for it.
+    r["overcharge_cents"] = max(collected - owed, 0)
+    r["shortfall_cents"] = max(owed - collected, 0)
+    r["owed_dollars"] = dollars(owed)
+    r["collected_dollars"] = dollars(collected)
     r["overcharge_dollars"] = dollars(r["overcharge_cents"])
+    r["shortfall_dollars"] = dollars(r["shortfall_cents"])
+    payable = r["payable_messages"] or 1
+    r["jobs_run_twice_pct"] = round(100 * r["jobs_run_twice"] / payable, 1)
+    # Whatever the last queue reading of this scenario was called. Two of the
+    # scenarios never reach a finished state — that is the finding — so they
+    # are read at the moment the watch stopped instead.
+    for label in (f"{name}-finished ", f"{name}-after-30s ", f"{name} "):
+        r["queue_line"] = kv(f"QUEUE {label}", body)
+        if r["queue_line"]:
+            break
     return r
 
 
-naive = run("02-naive-fleet.log", "naive")
-late = run("05-late-fleet.log", "late")
-claim = run("07-claim-fleet.log", "claim")
+lease = run("02-lease.log", "lease")
+heartbeat = run("04-heartbeat.log", "heartbeat")
+kill_after = run("06-kill-after.log", "kill_after")
+kill_before = run("08-kill-before.log", "kill_before")
+poison = run("10-poison.log", "poison")
+dlq = run("12-dlq.log", "dlq")
+ordering = run("14-ordering.log", "ordering")
+keyed = run("16-keyed.log", "keyed")
 
-# What the constraint actually bought in `late` mode: a log line, arriving after
-# the money had moved and after the client had already given up listening.
-late["duplicate_key_refusals"] = kv("REFUSALS late", text("05-late-fleet.log")).get("count", 0)
+# ── The heartbeat's cost ───────────────────────────────────────────────────
+# Extending the lease is not free: it is a round trip per job per half-timeout,
+# for the whole duration of every job. Worth counting, because "just heartbeat"
+# is the answer everyone reaches for and it has a price and a hole in it.
+heartbeat["lease_extensions"] = kv("EXTENSIONS ", text("04-heartbeat.log")).get("count", 0)
 
-# ── How wide the window really is ──────────────────────────────────────────
-# Measured in the handler: from the SELECT that said "never seen this key" to
-# the INSERT that finally recorded it. The interesting part is that it is not a
-# microsecond. It is however long the payment call takes, and a retry is
-# scheduled to arrive right in the middle of it.
-w = kv("WINDOW naive", text("04-naive-keys.log"))
-window = {
-    "requests": w.get("requests", 0),
-    "min_ms": w.get("min_ms", 0.0),
-    "median_ms": w.get("median_ms", 0.0),
-    "max_ms": w.get("max_ms", 0.0),
-}
+# ── The two kills ──────────────────────────────────────────────────────────
+for r, log_name in ((kill_after, "06-kill-after.log"), (kill_before, "08-kill-before.log")):
+    k = kv(f"KILL {r['scenario']} ", text(log_name))
+    r["killed_at_seconds"] = k.get("at_seconds", 0.0)
+    r["batch"] = k.get("batch", 0)
+    r["pending_after_the_kill"] = kv(
+        f"QUEUE {r['scenario']}-after-the-kill ", text(log_name)
+    ).get("pending", 0)
+
+# ── The poison message ─────────────────────────────────────────────────────
+p = kv("POISON ", text("10-poison.log"))
+# Counted with the worker stopped, so the figure holds still. It is not "16
+# deliveries and then it settled" — the worker was switched off mid-redelivery
+# and the entry was pending when it was.
+poison["deliveries_observed"] = p.get("deliveries", 0)
+poison["residency_seconds"] = p.get("residency_seconds", 0.0)
+poison["dead_lettered"] = p.get("dead_lettered", 0)
+w = kv("DLQWATCH poison ", text("10-poison.log"))
+poison["watch_seconds"] = w.get("seconds", 0)
+poison["max_dlq_depth"] = w.get("max_depth", 0)
+poison["first_alert_seconds"] = w.get("first_alert_s", -1)
+
+d = kv("DLQ ", text("12-dlq.log"))
+dlq["deliveries_before_dead_letter"] = d.get("deliveries_before_dlq", 0)
+dlq["seconds_to_dead_letter"] = d.get("seconds_to_dlq", 0.0)
+dlq["dead_letter_depth"] = d.get("depth", 0)
+wd = kv("DLQWATCH dlq ", text("12-dlq.log"))
+dlq["watch_seconds"] = wd.get("seconds", 0)
+dlq["first_alert_seconds"] = wd.get("first_alert_s", -1)
 
 
-def race(log: str, label: str) -> dict:
-    """One A/B probe: two requests, one key, a measured distance apart."""
-    r = kv(f"RACE {label}", text(log))
-    return {
-        "gap_ms": r.get("gap_ms", 0),
-        "customer_id": r.get("customer", 0),
-        "a_status": r.get("a_status", 0),
-        "b_status": r.get("b_status", 0),
-        "b_replayed": bool(r.get("b_replayed", 0)),
-        "bodies_identical": bool(r.get("bodies_identical", 0)),
-    }
+# ── Ordering ───────────────────────────────────────────────────────────────
+def completed_order(body: str) -> list[int]:
+    m = re.findall(r"^ORDER completed=([\d,]+)", body, re.M)
+    return [int(x) for x in m[-1].split(",")] if m else []
 
 
-replay = race("10-replay.log", "replay")
-fingerprint = race("11-fingerprint.log", "fingerprint")
-in_flight = race("12-in-flight.log", "in_flight")
+def inversions(seq: list[int]) -> int:
+    """Pairs finished out of the order they were published in."""
+    return sum(1 for i in range(len(seq)) for j in range(i + 1, len(seq)) if seq[i] > seq[j])
 
-expiry = race("13-expiry.log", "expired")
-exp = kv("EXPIRY", text("13-expiry.log"))
-expiry["ttl_seconds"] = exp.get("ttl_seconds", 0)
-expiry["processor_charges"] = exp.get("processor_charges", 0)
-expiry["collected_dollars"] = dollars(expiry["processor_charges"] * 4000)
+
+order = completed_order(text("14-ordering.log"))
+ordering["published_order"] = list(range(1, ordering["messages_published"] + 1))
+ordering["completed_order"] = order
+ordering["out_of_order_pairs"] = inversions(order)
+ordering["retried_message_finished_at_position"] = (
+    order.index(5) + 1 if 5 in order else 0
+)
 
 # ── The scenario's own settings, read back from the run rather than assumed ──
 up = text("01-compose-up.log")
 lat = re.findall(r"^(\d+) (\d+)\s*$", up, re.M)
 base, spread = (int(lat[-1][0]), int(lat[-1][1])) if lat else (0, 0)
-driver_any = kv("DRIVER", text("02-naive-fleet.log"))
-
-
-def from_up(pattern: str, fallback: float = 0.0) -> float:
-    m = re.search(pattern, up)
-    return float(m.group(1)) if m else fallback
-
-
-def unique_index_present() -> int:
-    """Whether the UNIQUE index existed during the naive run. It must not have.
-
-    Read back from pg_indexes in the run itself, because `naive` is defined by
-    the absence of that index and a capture that got this wrong would be
-    measuring the wrong thing while looking exactly the same.
-    """
-    m = re.search(r"-- is there a unique index on idempotency_keys\?\s*\n\s*(\d+)", up)
-    return int(m.group(1)) if m else -1
-
+mode = re.search(r'"mode":"(\w+)"', up)
+defaults = re.search(
+    r"worker defaults = (\w+) (\d+) (\d+) (\d+) (\d+) (\d+)", up
+)
 
 metrics = {
-    "scenario": {
-        "client_timeout_ms": driver_any.get("client_timeout_ms", 0),
-        "app_processor_timeout_s": from_up(r"app processor timeout = ([\d.]+)"),
-        "amount_cents": driver_any.get("amount_cents", 0),
-        "amount_dollars": dollars(driver_any.get("amount_cents", 0)),
-        "max_attempts": 2,
-        "concurrent": driver_any.get("concurrent", 0),
-        "idempotency_ttl_seconds": from_up(r"idempotency ttl = ([\d.]+)"),
-        "unique_index_during_naive_run": unique_index_present(),
+    "setup": {
+        "amount_cents": kv("ENQUEUED label=lease ", text("02-lease.log")).get("amount_cents", 0),
+        "amount_dollars": dollars(kv("ENQUEUED label=lease ", text("02-lease.log")).get("amount_cents", 0)),
+        # The endpoint in front of which all of this happens. It is Episode 2's,
+        # in the mode that cannot charge twice for one key, and it never changes.
+        "app_idempotency_mode": mode.group(1) if mode else "",
+        "visibility_timeout_ms": int(defaults.group(2)) if defaults else 0,
+        "worker_ack_mode_default": defaults.group(1) if defaults else "",
+        "workers": 2,
         "processor_latency_base_ms": base,
         "processor_latency_spread_ms": spread,
         "processor_latency_min_ms": base,
         "processor_latency_max_ms": base + spread - 1 if spread else 0,
+        # Jobs whose payment outlives a two-second lease, by construction:
+        # 1200 + (id * 137) % 2400 > 2000.
+        "customers_slower_than_lease": sum(
+            1 for i in range(1, 26) if base + (i * 137) % spread > 2000
+        ) if spread else 0,
     },
-    "naive": naive,
-    "late": late,
-    "claim": claim,
-    "window": window,
-    "replay": replay,
-    "fingerprint": fingerprint,
-    "in_flight": in_flight,
-    "expiry": expiry,
+    "lease": lease,
+    "heartbeat": heartbeat,
+    "kill_after": kill_after,
+    "kill_before": kill_before,
+    "poison": poison,
+    "dlq": dlq,
+    "ordering": ordering,
+    "keyed": keyed,
 }
 
 (OUT / "metrics.json").write_text(json.dumps(metrics, indent=2) + "\n")

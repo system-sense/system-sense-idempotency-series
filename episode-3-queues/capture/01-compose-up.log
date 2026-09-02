@@ -1,0 +1,165 @@
+ Image episode-3-queues-worker-1 Building 
+ Image episode-3-queues-worker-2 Building 
+ Image episode-3-queues-processor Building 
+ Image episode-3-queues-app Building 
+#1 [internal] load local bake definitions
+#1 reading from stdin 2.25kB done
+#1 DONE 0.0s
+
+#2 [app internal] load build definition from Dockerfile
+#2 transferring dockerfile: 277B done
+#2 DONE 0.0s
+
+#3 [worker-2 internal] load build definition from Dockerfile
+#3 transferring dockerfile: 200B done
+#3 DONE 0.0s
+
+#4 [processor internal] load build definition from Dockerfile
+#4 transferring dockerfile: 273B done
+#4 DONE 0.0s
+
+#5 [processor internal] load metadata for docker.io/library/python:3.12-slim
+#5 DONE 2.6s
+
+#6 [processor internal] load .dockerignore
+#6 transferring context: 2B done
+#6 DONE 0.0s
+
+#7 [app internal] load .dockerignore
+#7 transferring context: 2B done
+#7 DONE 0.0s
+
+#8 [worker-1 internal] load .dockerignore
+#8 transferring context: 2B done
+#8 DONE 0.0s
+
+#9 [worker-1 1/5] FROM docker.io/library/python:3.12-slim@sha256:78387bc3881b8273120a12ebe6c1ab22b018ccc2c9adf565ae1ac9b536e184ea
+#9 resolve docker.io/library/python:3.12-slim@sha256:78387bc3881b8273120a12ebe6c1ab22b018ccc2c9adf565ae1ac9b536e184ea done
+#9 DONE 0.0s
+
+#10 [processor internal] load build context
+#10 transferring context: 64B done
+#10 DONE 0.0s
+
+#11 [app internal] load build context
+#11 transferring context: 157B done
+#11 DONE 0.0s
+
+#12 [worker-2 internal] load build context
+#12 transferring context: 65B done
+#12 DONE 0.0s
+
+#13 [app 4/5] RUN pip install --no-cache-dir -r requirements.txt
+#13 CACHED
+
+#14 [app 3/5] COPY requirements.txt .
+#14 CACHED
+
+#15 [app 5/5] COPY app ./app
+#15 CACHED
+
+#16 [processor 3/5] COPY requirements.txt .
+#16 CACHED
+
+#17 [processor 4/5] RUN pip install --no-cache-dir -r requirements.txt
+#17 CACHED
+
+#18 [processor 5/5] COPY main.py .
+#18 CACHED
+
+#19 [worker-1 2/5] WORKDIR /srv
+#19 CACHED
+
+#20 [worker-1 3/5] COPY requirements.txt .
+#20 CACHED
+
+#21 [worker-1 4/5] RUN pip install --no-cache-dir -r requirements.txt
+#21 CACHED
+
+#22 [worker-1 5/5] COPY main.py .
+#22 CACHED
+
+#23 [app] exporting to image
+#23 exporting layers done
+#23 writing image sha256:4e9f40583b88c4475184feeb40af08ce2aa49b68a1652cd6a3a69ae2874c9471 done
+#23 naming to docker.io/library/episode-3-queues-app done
+#23 DONE 0.0s
+
+#24 [processor] exporting to image
+#24 exporting layers done
+#24 writing image sha256:c0d38b3fc696aa476ade0ebdf93a36004341798aec32a0b83063a885ec4a33dc done
+#24 naming to docker.io/library/episode-3-queues-processor done
+#24 DONE 0.0s
+
+#25 [worker-1] exporting to image
+#25 exporting layers done
+#25 writing image sha256:54013b21f311956705981e0f40d91ea84f23bbc460abd2825a5f1a5350615693 done
+#25 naming to docker.io/library/episode-3-queues-worker-1 done
+#25 DONE 0.0s
+
+#26 [worker-2] exporting to image
+#26 exporting layers done
+#26 writing image sha256:864072dfd79c4674b905b88fc9b61bc55671ee097d9ceb8a734d68b3c9c660cd done
+#26 naming to docker.io/library/episode-3-queues-worker-2 done
+#26 DONE 0.0s
+
+#27 [app] resolving provenance for metadata file
+#27 DONE 0.0s
+
+#28 [worker-2] resolving provenance for metadata file
+#28 DONE 0.0s
+
+#29 [processor] resolving provenance for metadata file
+#29 DONE 0.0s
+
+#30 [worker-1] resolving provenance for metadata file
+#30 DONE 0.0s
+ Image episode-3-queues-worker-1 Built 
+ Image episode-3-queues-processor Built 
+ Image episode-3-queues-app Built 
+ Image episode-3-queues-worker-2 Built 
+ Network episode-3-queues_default Creating 
+ Network episode-3-queues_default Created 
+ Volume episode-3-queues_pgdata Creating 
+ Volume episode-3-queues_pgdata Created 
+ Container episode-3-queues-redis-1 Creating 
+ Container episode-3-queues-postgres-1 Creating 
+ Container episode-3-queues-postgres-1 Created 
+ Container episode-3-queues-processor-1 Creating 
+ Container episode-3-queues-redis-1 Created 
+ Container episode-3-queues-processor-1 Created 
+ Container episode-3-queues-app-1 Creating 
+ Container episode-3-queues-app-1 Created 
+ Container episode-3-queues-worker-2-1 Creating 
+ Container episode-3-queues-worker-1-1 Creating 
+ Container episode-3-queues-worker-1-1 Created 
+ Container episode-3-queues-worker-2-1 Created 
+ Container episode-3-queues-postgres-1 Starting 
+ Container episode-3-queues-redis-1 Starting 
+ Container episode-3-queues-redis-1 Started 
+ Container episode-3-queues-postgres-1 Started 
+ Container episode-3-queues-postgres-1 Waiting 
+ Container episode-3-queues-postgres-1 Healthy 
+ Container episode-3-queues-processor-1 Starting 
+ Container episode-3-queues-processor-1 Started 
+ Container episode-3-queues-postgres-1 Waiting 
+ Container episode-3-queues-postgres-1 Healthy 
+ Container episode-3-queues-app-1 Starting 
+ Container episode-3-queues-app-1 Started 
+ Container episode-3-queues-postgres-1 Waiting 
+ Container episode-3-queues-redis-1 Waiting 
+ Container episode-3-queues-postgres-1 Waiting 
+ Container episode-3-queues-redis-1 Waiting 
+ Container episode-3-queues-postgres-1 Healthy 
+ Container episode-3-queues-redis-1 Healthy 
+ Container episode-3-queues-postgres-1 Healthy 
+ Container episode-3-queues-worker-1-1 Starting 
+ Container episode-3-queues-redis-1 Healthy 
+ Container episode-3-queues-worker-2-1 Starting 
+ Container episode-3-queues-worker-1-1 Started 
+ Container episode-3-queues-worker-2-1 Started 
+processor latency = LATENCY_BASE_MS + (customer_id * 137) % LATENCY_SPREAD_MS
+1200 2400 
+app idempotency mode = {"ok":true,"mode":"claim"}
+worker defaults = after 2000 0 0 0 1 
+redis = 7.4.11

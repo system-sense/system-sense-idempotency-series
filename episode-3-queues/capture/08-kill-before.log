@@ -1,0 +1,43 @@
+  XADD seq=1   1788373979154-0  customer 17  key=k_9cdff5f944d0
+  XADD seq=2   1788373979154-1  customer 16  key=k_4dcc9a5d04dd
+  XADD seq=3   1788373979154-2  customer 15  key=k_4584356f5df4
+  XADD seq=4   1788373979155-0  customer 14  key=k_12bded6b8042
+  XADD seq=5   1788373979155-1  customer 13  key=k_69888fc219df
+ENQUEUED label=kill_before messages=5 payable=5 poison=0 owed_cents=20000 amount_cents=4000
+-- five jobs waiting, nobody consuming. One worker starts and takes all five.
+-- worker-1 up  (ack=before visibility=2000ms heartbeat=0 max_deliveries=0 key=0 batch=5)
+-- it is now 1.5 s into the first of them, a 3.5 s payment.
+ Container episode-3-queues-worker-1-1 Killing 
+ Container episode-3-queues-worker-1-1 Killed 
+KILL kill_before worker=worker-1 at_seconds=1.5 batch=5
+-- kill_before-after-the-kill
+   stream length      5   (a log: acknowledging does not shorten it)
+   never delivered    0   <- work waiting
+   pending            0   <- delivered, not acknowledged
+   consumers          1
+   dead-letter depth  0
+QUEUE kill_before-after-the-kill length=5 lag=0 pending=0 dlq=0 consumers=1
+
+-- starting worker-2. Nothing about it knows a worker died.
+-- worker-2 up  (ack=before visibility=2000ms heartbeat=0 max_deliveries=0 key=0 batch=5)
+-- kill_before-finished
+   stream length      5   (a log: acknowledging does not shorten it)
+   never delivered    0   <- work waiting
+   pending            0   <- delivered, not acknowledged
+   consumers          2
+   dead-letter depth  0
+QUEUE kill_before-finished length=5 lag=0 pending=0 dlq=0 consumers=2
+
+-- the processor's books
+ customer_id | times_charged | cents 
+-------------+---------------+-------
+          17 |             1 |  4000
+(1 row)
+
+-- what the queue did, delivery by delivery
+ seq | customer_id |  worker  | delivery | claimed | outcome 
+-----+-------------+----------+----------+---------+---------
+   1 |          17 | worker-1 |        1 | f       | started
+(1 row)
+
+RESULT kill_before messages_enqueued=5 app_charges=1 app_cents=4000 processor_charges=1 collected_cents=4000 double_charged_customers=0 duplicate_charges=0 deliveries=1 messages_delivered=1 jobs_run_twice=0 redeliveries=0 jobs_never_attempted=4 unfinished_runs=1 replays=0 failed_runs=0

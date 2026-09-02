@@ -1,0 +1,5 @@
+[worker-1] created consumer group payments on checkouts
+[worker-1] ack=before visibility_timeout=2000ms heartbeat=0 max_deliveries=0 idempotent_consumer=0 batch=5
+[worker-2] ack=before visibility_timeout=2000ms heartbeat=0 max_deliveries=0 idempotent_consumer=0 batch=5
+[worker-1] ACKED   5 on receipt, before doing any of it
+[worker-1] NEW    1788373979154-0 seq=1 customer=17 delivery=1

@@ -1,0 +1,67 @@
+[worker-2] created consumer group payments on checkouts
+[worker-2] ack=after visibility_timeout=2000ms heartbeat=0 max_deliveries=0 idempotent_consumer=0 batch=1
+[worker-2] NEW    1788373859597-0 seq=1 customer=1 delivery=1
+[worker-2] CHARGED 1788373859597-0 seq=1 customer=1 ch_a248f084aa6a4344 in 1.37s
+[worker-2] NEW    1788373859597-2 seq=3 customer=3 delivery=1
+[worker-2] CHARGED 1788373859597-2 seq=3 customer=3 ch_fbbb6d20879f41d3 in 1.63s
+[worker-2] NEW    1788373859598-0 seq=5 customer=5 delivery=1
+[worker-2] CHARGED 1788373859598-0 seq=5 customer=5 ch_af19c5f44ed6445d in 1.91s
+[worker-2] NEW    1788373859598-2 seq=7 customer=7 delivery=1
+[worker-2] CHARGED 1788373859598-2 seq=7 customer=7 ch_6285c83e6b3f4f48 in 2.18s
+[worker-2] NEW    1788373859598-4 seq=9 customer=9 delivery=1
+[worker-2] CHARGED 1788373859598-4 seq=9 customer=9 ch_8917294e344b42d8 in 2.45s
+[worker-2] NEW    1788373859598-6 seq=11 customer=11 delivery=1
+[worker-2] CHARGED 1788373859598-6 seq=11 customer=11 ch_77e17b3f94944989 in 2.72s
+[worker-2] CLAIM  1788373859599-0 seq=12 customer=12 delivery=2  (idle > 2000 ms)
+[worker-2] CHARGED 1788373859599-0 seq=12 customer=12 ch_ec2b634f572e4b2e in 2.86s
+[worker-2] CLAIM  1788373859599-1 seq=13 customer=13 delivery=2  (idle > 2000 ms)
+[worker-2] CHARGED 1788373859599-1 seq=13 customer=13 ch_14792226cfd84b6c in 3.00s
+[worker-2] CLAIM  1788373859599-2 seq=14 customer=14 delivery=2  (idle > 2000 ms)
+[worker-2] CHARGED 1788373859599-2 seq=14 customer=14 ch_a0bdcc4cb7cc4ba5 in 3.14s
+[worker-2] CLAIM  1788373859599-3 seq=15 customer=15 delivery=2  (idle > 2000 ms)
+[worker-2] CHARGED 1788373859599-3 seq=15 customer=15 ch_e42f1715a9cf4286 in 3.26s
+[worker-2] CLAIM  1788373859599-4 seq=16 customer=16 delivery=2  (idle > 2000 ms)
+[worker-2] CHARGED 1788373859599-4 seq=16 customer=16 ch_e3767b08d50647b2 in 3.41s
+[worker-2] CLAIM  1788373859599-5 seq=17 customer=17 delivery=2  (idle > 2000 ms)
+[worker-2] CHARGED 1788373859599-5 seq=17 customer=17 ch_3bb8d42de0b243fd in 3.55s
+[worker-2] NEW    1788373859600-0 seq=20 customer=20 delivery=1
+[worker-2] CHARGED 1788373859600-0 seq=20 customer=20 ch_0ec784b88d664d32 in 1.56s
+[worker-2] NEW    1788373859600-2 seq=22 customer=22 delivery=1
+[worker-2] CHARGED 1788373859600-2 seq=22 customer=22 ch_9754f5b87b994c63 in 1.83s
+[worker-2] NEW    1788373859600-4 seq=24 customer=24 delivery=1
+[worker-2] CHARGED 1788373859600-4 seq=24 customer=24 ch_f5f62064f60a4579 in 2.11s
+[worker-2] CLAIM  1788373859600-5 seq=25 customer=25 delivery=2  (idle > 2000 ms)
+[worker-2] CHARGED 1788373859600-5 seq=25 customer=25 ch_db848b0e4cac4a33 in 2.25s
+[worker-1] ack=after visibility_timeout=2000ms heartbeat=0 max_deliveries=0 idempotent_consumer=0 batch=1
+[worker-1] NEW    1788373859597-1 seq=2 customer=2 delivery=1
+[worker-1] CHARGED 1788373859597-1 seq=2 customer=2 ch_a2dd7b4da7d9468b in 1.50s
+[worker-1] NEW    1788373859597-3 seq=4 customer=4 delivery=1
+[worker-1] CHARGED 1788373859597-3 seq=4 customer=4 ch_99de0064f3254754 in 1.76s
+[worker-1] NEW    1788373859598-1 seq=6 customer=6 delivery=1
+[worker-1] CHARGED 1788373859598-1 seq=6 customer=6 ch_5e654affd987475a in 2.04s
+[worker-1] NEW    1788373859598-3 seq=8 customer=8 delivery=1
+[worker-1] CHARGED 1788373859598-3 seq=8 customer=8 ch_f096c3c68cb64fe9 in 2.31s
+[worker-1] NEW    1788373859598-5 seq=10 customer=10 delivery=1
+[worker-1] CHARGED 1788373859598-5 seq=10 customer=10 ch_6440ab85ef7945b9 in 2.59s
+[worker-1] NEW    1788373859599-0 seq=12 customer=12 delivery=1
+[worker-1] CHARGED 1788373859599-0 seq=12 customer=12 ch_8ec6bb91ac0449bf in 2.86s
+[worker-1] NEW    1788373859599-1 seq=13 customer=13 delivery=1
+[worker-1] CHARGED 1788373859599-1 seq=13 customer=13 ch_723bb88b68f44907 in 3.00s
+[worker-1] NEW    1788373859599-2 seq=14 customer=14 delivery=1
+[worker-1] CHARGED 1788373859599-2 seq=14 customer=14 ch_222603231df743d3 in 3.13s
+[worker-1] NEW    1788373859599-3 seq=15 customer=15 delivery=1
+[worker-1] CHARGED 1788373859599-3 seq=15 customer=15 ch_9803985af65b40fa in 3.27s
+[worker-1] NEW    1788373859599-4 seq=16 customer=16 delivery=1
+[worker-1] CHARGED 1788373859599-4 seq=16 customer=16 ch_dca54eace13a446c in 3.41s
+[worker-1] NEW    1788373859599-5 seq=17 customer=17 delivery=1
+[worker-1] CHARGED 1788373859599-5 seq=17 customer=17 ch_530ea3c4b4fb4f75 in 3.55s
+[worker-1] NEW    1788373859599-6 seq=18 customer=18 delivery=1
+[worker-1] CHARGED 1788373859599-6 seq=18 customer=18 ch_a4ed9ec93ae34d49 in 1.29s
+[worker-1] NEW    1788373859599-7 seq=19 customer=19 delivery=1
+[worker-1] CHARGED 1788373859599-7 seq=19 customer=19 ch_5b0d9961829c4de8 in 1.41s
+[worker-1] NEW    1788373859600-1 seq=21 customer=21 delivery=1
+[worker-1] CHARGED 1788373859600-1 seq=21 customer=21 ch_afc3d4b9d1fb4d67 in 1.69s
+[worker-1] NEW    1788373859600-3 seq=23 customer=23 delivery=1
+[worker-1] CHARGED 1788373859600-3 seq=23 customer=23 ch_968752349c7a423c in 1.97s
+[worker-1] NEW    1788373859600-5 seq=25 customer=25 delivery=1
+[worker-1] CHARGED 1788373859600-5 seq=25 customer=25 ch_675c15325319490e in 2.24s

@@ -1,0 +1,70 @@
+-- worker-1 up  (ack=after visibility=2000ms heartbeat=0 max_deliveries=0 key=0 batch=1)
+  XADD seq=1   1788373993937-0  POISON  key=k_910606c0ae8a
+ENQUEUED label=poison messages=1 payable=0 poison=1 owed_cents=0 amount_cents=4000
+-- dead-letter watch, 30s   (threshold: one message)
+   t=+  0.0s  dead-letter depth 0   pending 1
+   t=+  1.0s  dead-letter depth 0   pending 1
+   t=+  2.0s  dead-letter depth 0   pending 1
+   t=+  3.0s  dead-letter depth 0   pending 1
+   t=+  4.0s  dead-letter depth 0   pending 1
+   t=+  5.0s  dead-letter depth 0   pending 1
+   t=+  6.0s  dead-letter depth 0   pending 1
+   t=+  7.1s  dead-letter depth 0   pending 1
+   t=+  8.1s  dead-letter depth 0   pending 1
+   t=+  9.1s  dead-letter depth 0   pending 1
+   t=+ 10.1s  dead-letter depth 0   pending 1
+   t=+ 11.1s  dead-letter depth 0   pending 1
+   t=+ 12.1s  dead-letter depth 0   pending 1
+   t=+ 13.1s  dead-letter depth 0   pending 1
+   t=+ 14.1s  dead-letter depth 0   pending 1
+   t=+ 15.1s  dead-letter depth 0   pending 1
+   t=+ 16.2s  dead-letter depth 0   pending 1
+   t=+ 17.2s  dead-letter depth 0   pending 1
+   t=+ 18.2s  dead-letter depth 0   pending 1
+   t=+ 19.2s  dead-letter depth 0   pending 1
+   t=+ 20.2s  dead-letter depth 0   pending 1
+   t=+ 21.2s  dead-letter depth 0   pending 1
+   t=+ 22.2s  dead-letter depth 0   pending 1
+   t=+ 23.2s  dead-letter depth 0   pending 1
+   t=+ 24.2s  dead-letter depth 0   pending 1
+   t=+ 25.3s  dead-letter depth 0   pending 1
+   t=+ 26.3s  dead-letter depth 0   pending 1
+   t=+ 27.3s  dead-letter depth 0   pending 1
+   t=+ 28.3s  dead-letter depth 0   pending 1
+   t=+ 29.3s  dead-letter depth 0   pending 1
+DLQWATCH poison seconds=30 samples=30 max_depth=0 first_alert_s=-1
+
+-- poison-after-30s
+   stream length      1   (a log: acknowledging does not shorten it)
+   never delivered    0   <- work waiting
+   pending            1   <- delivered, not acknowledged
+   consumers          1
+   dead-letter depth  0
+   XPENDING:
+      entry                held by      idle ms  deliveries
+      1788373993937-0      worker-1         238          16
+QUEUE poison-after-30s length=1 lag=0 pending=1 dlq=0 consumers=1
+
+-- every delivery of that one message
+ delivery |  worker  | claimed | outcome |                    detail                    |    at     
+----------+----------+---------+---------+----------------------------------------------+-----------
+        1 | worker-1 | f       | failed  | ValueError: amount_cents=-1 is not a payment | 33:13.938
+        2 | worker-1 | t       | failed  | ValueError: amount_cents=-1 is not a payment | 33:15.984
+        3 | worker-1 | t       | failed  | ValueError: amount_cents=-1 is not a payment | 33:18.146
+        4 | worker-1 | t       | failed  | ValueError: amount_cents=-1 is not a payment | 33:20.221
+        5 | worker-1 | t       | failed  | ValueError: amount_cents=-1 is not a payment | 33:22.347
+        6 | worker-1 | t       | failed  | ValueError: amount_cents=-1 is not a payment | 33:24.482
+        7 | worker-1 | t       | failed  | ValueError: amount_cents=-1 is not a payment | 33:26.623
+        8 | worker-1 | t       | failed  | ValueError: amount_cents=-1 is not a payment | 33:28.755
+        9 | worker-1 | t       | failed  | ValueError: amount_cents=-1 is not a payment | 33:30.892
+       10 | worker-1 | t       | failed  | ValueError: amount_cents=-1 is not a payment | 33:33.028
+       11 | worker-1 | t       | failed  | ValueError: amount_cents=-1 is not a payment | 33:35.096
+       12 | worker-1 | t       | failed  | ValueError: amount_cents=-1 is not a payment | 33:37.156
+       13 | worker-1 | t       | failed  | ValueError: amount_cents=-1 is not a payment | 33:39.224
+       14 | worker-1 | t       | failed  | ValueError: amount_cents=-1 is not a payment | 33:41.242
+       15 | worker-1 | t       | failed  | ValueError: amount_cents=-1 is not a payment | 33:43.266
+       16 | worker-1 | t       | failed  | ValueError: amount_cents=-1 is not a payment | 33:45.328
+(16 rows)
+
+POISON deliveries=16 residency_seconds=31.4 dead_lettered=0
+RESULT poison messages_enqueued=1 app_charges=0 app_cents=0 processor_charges=0 collected_cents=0 double_charged_customers=0 duplicate_charges=0 deliveries=16 messages_delivered=1 jobs_run_twice=1 redeliveries=15 jobs_never_attempted=0 unfinished_runs=0 replays=0 failed_runs=16

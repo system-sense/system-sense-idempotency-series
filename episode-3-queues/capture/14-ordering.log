@@ -1,0 +1,30 @@
+-- worker-1 up  (ack=after visibility=15000ms heartbeat=0 max_deliveries=0 key=0 batch=1)
+  XADD seq=1   1788374062799-0  customer 18  key=k_77ced3436bdc
+  XADD seq=2   1788374062799-1  customer 19  key=k_56ef2f60254e
+  XADD seq=3   1788374062800-0  customer 20  key=k_5d8771f79524
+  XADD seq=4   1788374062800-1  customer 21  key=k_3a8857cd9634
+  XADD seq=5   1788374062800-2  customer 22  key=k_210e685fda1f  fails its first 1 deliveries
+  XADD seq=6   1788374062800-3  customer 23  key=k_490cde0f11bd
+  XADD seq=7   1788374062800-4  customer 1  key=k_390995b23332
+  XADD seq=8   1788374062801-0  customer 2  key=k_97f42b1046d6
+  XADD seq=9   1788374062801-1  customer 3  key=k_9c003e1e9e21
+  XADD seq=10  1788374062801-2  customer 4  key=k_60cec52e37c8
+ENQUEUED label=ordering messages=10 payable=10 poison=0 owed_cents=40000 amount_cents=4000
+-- published order vs completed order
+ seq | customer_id | delivery | claimed | outcome | finished  
+-----+-------------+----------+---------+---------+-----------
+   1 |          18 |        1 | f       | charged | 34:24.093
+   2 |          19 |        1 | f       | charged | 34:25.515
+   3 |          20 |        1 | f       | charged | 34:27.073
+   4 |          21 |        1 | f       | charged | 34:28.774
+   5 |          22 |        1 | f       | failed  | 34:28.779
+   6 |          23 |        1 | f       | charged | 34:30.750
+   7 |           1 |        1 | f       | charged | 34:32.111
+   8 |           2 |        1 | f       | charged | 34:33.598
+   9 |           3 |        1 | f       | charged | 34:35.221
+  10 |           4 |        1 | f       | charged | 34:36.990
+   5 |          22 |        2 | t       | charged | 34:46.361
+(11 rows)
+
+ORDER completed=1,2,3,4,6,7,8,9,10,5
+RESULT ordering messages_enqueued=10 app_charges=10 app_cents=40000 processor_charges=10 collected_cents=40000 double_charged_customers=0 duplicate_charges=0 deliveries=11 messages_delivered=10 jobs_run_twice=1 redeliveries=1 jobs_never_attempted=0 unfinished_runs=0 replays=0 failed_runs=1
