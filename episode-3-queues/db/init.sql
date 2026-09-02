@@ -1,15 +1,17 @@
--- System Sense — Idempotency Ep.2: Your Idempotency Key Has a Race Condition
+-- System Sense — Idempotency Ep.3: 3 Ways Your Queue Silently Loses Work
 --
--- Episode 1 left this schema with a hole in it, on purpose:
+-- Episode 2's schema, unchanged, plus one table.
 --
---   public.charges       what OUR application believes it did
---   processor.ledger     what the PAYMENT PROCESSOR actually did with money
+--   public.charges          what OUR application believes it did
+--   public.idempotency_keys one row per press of Pay, claimed before the work
+--   processor.ledger        what the PAYMENT PROCESSOR actually did with money
+--   public.job_runs         NEW — what the QUEUE did                (see below)
 --
--- and nothing anywhere that could tell two requests apart. Fourteen of
--- twenty-five customers were charged twice and the database had no grounds to
--- refuse a single one of them.
---
--- This file is Episode 1's, plus the column and the constraint it was missing.
+-- Everything above the new table is Episode 2's file byte for byte, including
+-- the UNIQUE constraint that made the endpoint safe. That matters: this
+-- episode's claim is that a correctly-keyed endpoint is still not enough once
+-- something other than the client decides when to retry, and the claim is only
+-- worth making if the endpoint really is the one Episode 2 shipped.
 
 -- ── Customers ──────────────────────────────────────────────────────────────
 CREATE TABLE customers (
@@ -112,3 +114,37 @@ CREATE TABLE processor.ledger (
 );
 
 CREATE INDEX ledger_customer_idx ON processor.ledger (customer_id, captured_at);
+
+-- ── What the queue did ─────────────────────────────────────────────────────
+-- One row per DELIVERY, not one per job. That distinction is the episode.
+--
+-- The other three tables can tell you how much money moved. None of them can
+-- tell you that one message was handed to two workers, because by the time the
+-- last scenario is running that fact has stopped costing anything: the job runs
+-- twice and the customer is charged once. Without this table the fix looks like
+-- the redeliveries went away, and they did not.
+--
+-- `delivery` is Redis's own count from the PEL, not one the application keeps.
+-- `claimed` says the row came from XAUTOCLAIM — a lease that expired — rather
+-- than from a first delivery.
+--
+-- The row is written when a delivery starts and updated when it ends, so a
+-- worker killed mid-job leaves a row reading `started` with no `finished_at`.
+-- That is not a bookkeeping bug; it is the only trace a killed worker leaves.
+CREATE TABLE job_runs (
+    id          BIGSERIAL PRIMARY KEY,
+    message_id  TEXT        NOT NULL,
+    seq         INT         NOT NULL,
+    customer_id INT         NOT NULL,
+    worker      TEXT        NOT NULL,
+    delivery    INT         NOT NULL,
+    claimed     BOOLEAN     NOT NULL DEFAULT false,
+    outcome     TEXT        NOT NULL
+                CHECK (outcome IN ('started', 'charged', 'replayed', 'failed')),
+    detail      TEXT,
+    started_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+    finished_at TIMESTAMPTZ
+);
+
+CREATE INDEX job_runs_message_idx ON job_runs (message_id, started_at);
+CREATE INDEX job_runs_finished_idx ON job_runs (finished_at);

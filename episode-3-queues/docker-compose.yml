@@ -17,6 +17,27 @@ services:
       retries: 60
 
   # ─────────────────────────────────────────────────────────────────────────
+  #  EPISODE 3'S NEW SERVICE, and the only one added since Episode 1.
+  #
+  #  Redis Streams consumer groups, because they have genuine visibility-timeout
+  #  semantics rather than an imitation of them: XREADGROUP puts an entry in a
+  #  consumer's pending list, XACK takes it out, and XAUTOCLAIM hands anything
+  #  idle too long to somebody else. That is SQS's visibility timeout and
+  #  Kafka's max.poll.interval.ms, in a container that starts in a second and
+  #  needs nothing explained about brokers or partitions first.
+  # ─────────────────────────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "no", "--save", ""]
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  # ─────────────────────────────────────────────────────────────────────────
   #  EPISODE 1'S KNOB, unchanged.
   #
   #  How slow the payment processor is. Latency for a given customer is
@@ -47,23 +68,17 @@ services:
         condition: service_healthy
 
   # ─────────────────────────────────────────────────────────────────────────
-  #  EPISODE 2'S KNOB.
+  #  EPISODE 2'S SERVICE, AND IT IS NOT THE KNOB ANY MORE.
   #
-  #  How this service treats the Idempotency-Key header:
+  #  Pinned to `claim`: the key is inserted before the work, ON CONFLICT DO
+  #  NOTHING, and the loser of the race replays the stored response. That
+  #  endpoint cannot be made to charge twice for one key, and nothing in this
+  #  episode changes a line of it.
   #
-  #      off     Episode 1. The header is read and ignored.
-  #      naive   SELECT the key, do the work, INSERT the key. No constraint.
-  #      late    The same handler, WITH the UNIQUE constraint. One line of DDL
-  #              apart, and it fires after the money has already moved.
-  #      claim   INSERT the key first, ON CONFLICT DO NOTHING. The fix.
-  #
-  #  Run the fixed version, then break it again without touching a line of
-  #  application code:
-  #
-  #      IDEMPOTENCY_MODE=naive docker compose up
-  #
-  #  The app asserts the UNIQUE index into or out of existence at boot, so the
-  #  mode always matches the schema it is running against.
+  #  It is pinned rather than left configurable on purpose. Episode 3 is not
+  #  about whether the endpoint is correct. It is about what happens in front of
+  #  a correct endpoint, and leaving a way to break the endpoint would let a
+  #  viewer conclude the queue was fine all along.
   # ─────────────────────────────────────────────────────────────────────────
   app:
     build: .
@@ -71,7 +86,7 @@ services:
       DATABASE_URL: "postgres://sysense:sysense@postgres:5432/sysense"
       PROCESSOR_URL: "http://processor:9000"
       PROCESSOR_TIMEOUT_SECONDS: "30"
-      IDEMPOTENCY_MODE: "${IDEMPOTENCY_MODE:-claim}"
+      IDEMPOTENCY_MODE: "claim"
       IDEMPOTENCY_TTL_SECONDS: "${IDEMPOTENCY_TTL_SECONDS:-86400}"
     ports:
       - "8000:8000"
@@ -80,6 +95,67 @@ services:
         condition: service_healthy
       processor:
         condition: service_started
+
+  # ─────────────────────────────────────────────────────────────────────────
+  #  EPISODE 3'S KNOBS. All of them are on the consumer, and every one of them
+  #  is a line in a config file somebody set once and never looked at again.
+  #
+  #    ACK_MODE=after|before   where the XACK goes. This one line is the choice
+  #                            between at-least-once and at-most-once, and your
+  #                            queue library picked it for you.
+  #    VISIBILITY_TIMEOUT_MS   how long an entry may sit idle before another
+  #                            consumer may take it. A guess about how long the
+  #                            work takes, made before the work existed.
+  #    HEARTBEAT=1             hold the lease while working, so it cannot expire
+  #                            underneath a job that is still running.
+  #    MAX_DELIVERIES=N        dead-letter after N deliveries. 0 means forever.
+  #    IDEMPOTENT_CONSUMER=1   pass the producer's key to Episode 2's endpoint.
+  #    WORKER_BATCH=N          how many entries to take per read.
+  #
+  #  Run the whole thing the wrong way and watch the same job pay twice:
+  #
+  #      ACK_MODE=after VISIBILITY_TIMEOUT_MS=2000 docker compose up --build
+  #      python3 scripts/enqueue.py --customers $(seq 1 25)
+  #
+  #  Two workers rather than `deploy: replicas: 2` so that one of them can be
+  #  killed by name on camera:  docker compose kill worker-1
+  # ─────────────────────────────────────────────────────────────────────────
+  worker-1: &worker
+    build: ./worker
+    environment:
+      REDIS_URL: "redis://redis:6379/0"
+      APP_URL: "http://app:8000"
+      DATABASE_URL: "postgres://sysense:sysense@postgres:5432/sysense"
+      WORKER_NAME: "worker-1"
+      ACK_MODE: "${ACK_MODE:-after}"
+      VISIBILITY_TIMEOUT_MS: "${VISIBILITY_TIMEOUT_MS:-2000}"
+      HEARTBEAT: "${HEARTBEAT:-0}"
+      MAX_DELIVERIES: "${MAX_DELIVERIES:-0}"
+      IDEMPOTENT_CONSUMER: "${IDEMPOTENT_CONSUMER:-0}"
+      WORKER_BATCH: "${WORKER_BATCH:-1}"
+      HTTP_TIMEOUT_SECONDS: "30"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      app:
+        condition: service_started
+
+  worker-2:
+    <<: *worker
+    environment:
+      REDIS_URL: "redis://redis:6379/0"
+      APP_URL: "http://app:8000"
+      DATABASE_URL: "postgres://sysense:sysense@postgres:5432/sysense"
+      WORKER_NAME: "worker-2"
+      ACK_MODE: "${ACK_MODE:-after}"
+      VISIBILITY_TIMEOUT_MS: "${VISIBILITY_TIMEOUT_MS:-2000}"
+      HEARTBEAT: "${HEARTBEAT:-0}"
+      MAX_DELIVERIES: "${MAX_DELIVERIES:-0}"
+      IDEMPOTENT_CONSUMER: "${IDEMPOTENT_CONSUMER:-0}"
+      WORKER_BATCH: "${WORKER_BATCH:-1}"
+      HTTP_TIMEOUT_SECONDS: "30"
 
 volumes:
   pgdata:
