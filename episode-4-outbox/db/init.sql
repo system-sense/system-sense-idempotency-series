@@ -1,17 +1,19 @@
--- System Sense — Idempotency Ep.3: 3 Ways Your Queue Silently Loses Work
+-- System Sense — Idempotency Ep.4: Exactly-Once Delivery Is a Lie
 --
--- Episode 2's schema, unchanged, plus one table.
+-- Episode 3's schema, unchanged, plus two tables at the bottom of this file.
 --
 --   public.charges          what OUR application believes it did
---   public.idempotency_keys one row per press of Pay, claimed before the work
+--   public.idempotency_keys one row per intent, claimed before the work  (Ep 2)
 --   processor.ledger        what the PAYMENT PROCESSOR actually did with money
---   public.job_runs         NEW — what the QUEUE did                (see below)
+--   public.job_runs         one row per DELIVERY — what the queue did    (Ep 3)
+--   public.orders           NEW — the business fact               (see below)
+--   public.outbox           NEW — the event, in the same transaction
 --
--- Everything above the new table is Episode 2's file byte for byte, including
--- the UNIQUE constraint that made the endpoint safe. That matters: this
--- episode's claim is that a correctly-keyed endpoint is still not enough once
--- something other than the client decides when to retry, and the claim is only
--- worth making if the endpoint really is the one Episode 2 shipped.
+-- Everything above the two new tables is Episode 3's file byte for byte. That
+-- matters more here than anywhere else in the series: this episode's claim is
+-- that a correct endpoint and a fixed consumer are still not enough, because
+-- the loss happens before either of them is involved. The claim is only worth
+-- making if the endpoint and the consumer really are the ones already shipped.
 
 -- ── Customers ──────────────────────────────────────────────────────────────
 CREATE TABLE customers (
@@ -148,3 +150,61 @@ CREATE TABLE job_runs (
 
 CREATE INDEX job_runs_message_idx ON job_runs (message_id, started_at);
 CREATE INDEX job_runs_finished_idx ON job_runs (finished_at);
+
+-- ── The business fact ──────────────────────────────────────────────────────
+-- Episode 3's producer was `scripts/enqueue.py`: one XADD and an exit. It had
+-- no database to write to, which is exactly why it could not have this bug.
+--
+-- A real producer has one. Something happened — an order was placed — and two
+-- things have to become true because of it: a row in this table, and an event
+-- on the queue that makes the money move. Two different systems. One event.
+--
+-- `order_key` is the idempotency key from Episode 2, minted HERE, once, before
+-- either write. It is the producer saying "everything that follows is one
+-- intent", and it is the only party that can say it: the relay cannot tell its
+-- second publish from its first any more than a consumer can tell delivery two
+-- from delivery one.
+CREATE TABLE orders (
+    id           BIGSERIAL PRIMARY KEY,
+    seq          INT         NOT NULL,
+    customer_id  INT         NOT NULL REFERENCES customers(id),
+    amount_cents INT         NOT NULL,
+    order_key    TEXT        NOT NULL,
+    created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX orders_key_idx ON orders (order_key);
+
+-- ── The transactional outbox ───────────────────────────────────────────────
+-- The whole episode, in one table.
+--
+-- The event is not published from the request handler. It is INSERTed, into
+-- this table, in the SAME transaction as the order. One commit, both facts, one
+-- database — so there is no window to be killed in. Either both are there or
+-- neither is, and that is a property of the transaction, not of how carefully
+-- the handler was written.
+--
+-- `payload` is TEXT and not JSONB, for the reason Episode 2's `response_body`
+-- is: what goes on the stream should be the bytes that were written down, not a
+-- re-serialisation of them.
+--
+-- `publish_attempts` is incremented BEFORE the XADD and `published_at` is set
+-- AFTER it, which leaves the relay's own dual write on display: kill it in
+-- between and the row reads attempted-but-not-sent, so the next relay publishes
+-- it again. The outbox does not eliminate duplicates. It eliminates LOSS, and
+-- Episodes 2 and 3 already dealt with duplicates.
+CREATE TABLE outbox (
+    id               BIGSERIAL PRIMARY KEY,
+    order_id         BIGINT      NOT NULL REFERENCES orders(id),
+    topic            TEXT        NOT NULL,
+    payload          TEXT        NOT NULL,
+    publish_attempts INT         NOT NULL DEFAULT 0,
+    message_id       TEXT,
+    created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
+    published_at     TIMESTAMPTZ
+);
+
+-- The relay's only query, and the index that makes it cheap: a partial index on
+-- the unsent rows. An outbox that is keeping up is nearly empty by this index's
+-- reckoning however large the table gets.
+CREATE INDEX outbox_unsent_idx ON outbox (id) WHERE published_at IS NULL;
