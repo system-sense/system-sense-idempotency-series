@@ -1,5 +1,7 @@
 # Episode 3 — 3 Ways Your Queue Silently Loses Work
 
+**Watch the episode:** [3 Ways Your Queue Silently Duplicates & Drops Work (Part 3)](https://youtu.be/rR81FtkdqT8)
+
 Episode 2 ended with an HTTP endpoint that cannot be made to charge twice for
 one key. **That endpoint is in this folder, unchanged.** `app/` is byte-for-byte
 Episode 2's, pinned to the handler that works:
@@ -357,5 +359,7 @@ No queue can fix that for you. That is Episode 4.
 ---
 
 Part of the **System Sense — Idempotency** mini-series.
+Watch this episode: https://youtu.be/rR81FtkdqT8
 Full playlist: https://www.youtube.com/playlist?list=PLMlexv0Ndaog
-Previous episode: [Episode 2 — Your Idempotency Key Has a Race Condition](../episode-2-keys/)
+Previous episode: [Episode 2 — Your Idempotency Key Has a Race Condition](../episode-2-keys/) · [watch](https://youtu.be/g19jax6Auxc)
+Next episode: [Episode 4 — Exactly-Once Delivery Is a Lie](../episode-4-outbox/) · [watch](https://youtu.be/z7bLGBmXlck)

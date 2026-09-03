@@ -3,7 +3,7 @@
 A runnable demonstration that **a timeout is not a failure**. The request
 succeeded. Only the response was lost. Retrying it charges the customer again.
 
-**Watch the episode:** https://www.youtube.com/watch?v=KE7CCnTfQqk
+**Watch the episode:** [Why Your Retries Double-Charge: Idempotency Explained (Part 1)](https://youtu.be/KE7CCnTfQqk)
 
 ```bash
 docker compose up --build
@@ -175,5 +175,7 @@ condition in it.
 ---
 
 Part of the **System Sense — Idempotency** mini-series.
+Watch this episode: https://youtu.be/KE7CCnTfQqk
 Full playlist: https://www.youtube.com/playlist?list=PLMlexv0Ndaog
 Previous series: [Caching](https://github.com/system-sense/system-sense-caching-series).
+Next episode: [Episode 2 — Your Idempotency Key Has a Race Condition](../episode-2-keys/) · [watch](https://youtu.be/g19jax6Auxc)

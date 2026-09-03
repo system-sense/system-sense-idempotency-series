@@ -2,6 +2,8 @@
 
 **A written companion to Episode 1 of System Sense — [Exactly-Once Is a Lie](../).**
 
+**Watch it instead:** [Why Your Retries Double-Charge: Idempotency Explained (Part 1)](https://youtu.be/KE7CCnTfQqk) · [full playlist](https://www.youtube.com/playlist?list=PLMlexv0Ndaog)
+
 The video is about eleven minutes. This covers the same ground more slowly, with
 the code in full, and then goes on into what would not fit: the complete list of
 places a duplicate can come from and which of them you actually control, what

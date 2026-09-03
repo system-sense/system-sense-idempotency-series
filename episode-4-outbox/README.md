@@ -1,5 +1,7 @@
 # Episode 4 — Exactly-Once Delivery Is a Lie
 
+**Watch the episode:** [Exactly-Once Delivery Is a Lie: The Outbox Pattern (Part 4)](https://youtu.be/z7bLGBmXlck)
+
 Episode 2 shipped an endpoint that cannot charge twice for one key. Episode 3
 shipped a consumer that holds its lease, dead-letters what it cannot process,
 and passes the producer's key on. **Both of them are in this folder, unchanged:**
@@ -378,5 +380,6 @@ transaction spans them.
 ---
 
 Part of the **System Sense — Idempotency** mini-series.
+Watch this episode: https://youtu.be/z7bLGBmXlck
 Full playlist: https://www.youtube.com/playlist?list=PLMlexv0Ndaog
-Previous episode: [Episode 3 — 3 Ways Your Queue Silently Loses Work](../episode-3-queues/)
+Previous episode: [Episode 3 — 3 Ways Your Queue Silently Loses Work](../episode-3-queues/) · [watch](https://youtu.be/rR81FtkdqT8)

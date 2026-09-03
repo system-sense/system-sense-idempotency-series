@@ -2,6 +2,8 @@
 
 **A written companion to Episode 2 of System Sense — [Exactly-Once Is a Lie](../).**
 
+**Watch it instead:** [16 of 25 Charged Twice: Idempotency Race Conditions (Part 2)](https://youtu.be/g19jax6Auxc) · [full playlist](https://www.youtube.com/playlist?list=PLMlexv0Ndaog)
+
 The video is about fourteen minutes. This covers the same ground more slowly,
 with the SQL in full, and then goes on into what would not fit: who mints the
 key and why it cannot be the server, what to store when the work *fails*, what

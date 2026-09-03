@@ -2,6 +2,8 @@
 
 **A written companion to Episode 3 of System Sense — [Exactly-Once Is a Lie](../).**
 
+**Watch it instead:** [3 Ways Your Queue Silently Duplicates & Drops Work (Part 3)](https://youtu.be/rR81FtkdqT8) · [full playlist](https://www.youtube.com/playlist?list=PLMlexv0Ndaog)
+
 The video is about fifteen minutes. This covers the same ground more slowly, with
 the consumer loop in full, and then goes on into what would not fit: how these
 three bugs appear in SQS, Kafka and RabbitMQ specifically, why raising the

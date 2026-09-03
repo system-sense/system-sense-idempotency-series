@@ -8,7 +8,7 @@ adding the missing `UNIQUE` constraint does not work either, and that the
 difference between the version that fails and the version that works is where
 the `INSERT` goes — not whether there is one.
 
-**Watch the episode:** https://www.youtube.com/watch?v=g19jax6Auxc
+**Watch the episode:** [16 of 25 Charged Twice: Idempotency Race Conditions (Part 2)](https://youtu.be/g19jax6Auxc)
 
 ```bash
 docker compose up --build
@@ -248,5 +248,7 @@ Episode 3.
 ---
 
 Part of the **System Sense — Idempotency** mini-series.
+Watch this episode: https://youtu.be/g19jax6Auxc
 Full playlist: https://www.youtube.com/playlist?list=PLMlexv0Ndaog
-Previous episode: [Episode 1 — The Retry That Charged Your Customer Twice](../episode-1-duplicates/)
+Previous episode: [Episode 1 — The Retry That Charged Your Customer Twice](../episode-1-duplicates/) · [watch](https://youtu.be/KE7CCnTfQqk)
+Next episode: [Episode 3 — 3 Ways Your Queue Silently Loses Work](../episode-3-queues/) · [watch](https://youtu.be/rR81FtkdqT8)

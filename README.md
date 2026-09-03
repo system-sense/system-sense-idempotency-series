@@ -12,18 +12,24 @@ Caching series, with Redis added in Episode 3 where it earns its place.
 
 | Episode | Folder | Thesis | State |
 | --- | --- | --- | --- |
-| 1. The Retry That Charged Your Customer Twice | [`episode-1-duplicates/`](episode-1-duplicates/) | A timeout is not a failure. The request succeeded; only the response was lost. | [**watch**](https://www.youtube.com/watch?v=KE7CCnTfQqk) · [guide](episode-1-duplicates/GUIDE.md) |
-| 2. Your Idempotency Key Has a Race Condition | [`episode-2-keys/`](episode-2-keys/) | "Check, then insert" is TOCTOU, and the `UNIQUE` constraint only helps if you claim the key before you do the work. | [**watch**](https://www.youtube.com/watch?v=g19jax6Auxc) · [guide](episode-2-keys/GUIDE.md) |
-| 3. 3 Ways Your Queue Silently Loses Work | [`episode-3-queues/`](episode-3-queues/) | Visibility timeouts, poison messages, dead-letter queues. Episode 2's endpoint, unchanged, still charging people twice. | demo built · [guide](episode-3-queues/GUIDE.md) |
-| 4. Exactly-Once Delivery Is a Lie | [`episode-4-outbox/`](episode-4-outbox/) | The dual write. Exactly-once *delivery* is impossible; exactly-once *effects* are at-least-once plus an idempotent consumer. | demo built · [**guide**](episode-4-outbox/GUIDE.md) |
+| 1. The Retry That Charged Your Customer Twice | [`episode-1-duplicates/`](episode-1-duplicates/) | A timeout is not a failure. The request succeeded; only the response was lost. | [**watch**](https://youtu.be/KE7CCnTfQqk) · [guide](episode-1-duplicates/GUIDE.md) |
+| 2. Your Idempotency Key Has a Race Condition | [`episode-2-keys/`](episode-2-keys/) | "Check, then insert" is TOCTOU, and the `UNIQUE` constraint only helps if you claim the key before you do the work. | [**watch**](https://youtu.be/g19jax6Auxc) · [guide](episode-2-keys/GUIDE.md) |
+| 3. 3 Ways Your Queue Silently Loses Work | [`episode-3-queues/`](episode-3-queues/) | Visibility timeouts, poison messages, dead-letter queues. Episode 2's endpoint, unchanged, still charging people twice. | [**watch**](https://youtu.be/rR81FtkdqT8) · [guide](episode-3-queues/GUIDE.md) |
+| 4. Exactly-Once Delivery Is a Lie | [`episode-4-outbox/`](episode-4-outbox/) | The dual write. Exactly-once *delivery* is impossible; exactly-once *effects* are at-least-once plus an idempotent consumer. | [**watch**](https://youtu.be/z7bLGBmXlck) · [**guide**](episode-4-outbox/GUIDE.md) |
 
 ## Watch
 
 Full playlist: https://www.youtube.com/playlist?list=PLMlexv0Ndaog
 
-Episode 1 — *The Retry That Charged Your Customer Twice* (https://www.youtube.com/watch?v=KE7CCnTfQqk)
+| Part | On YouTube | |
+| --- | --- | --- |
+| 1 | *Why Your Retries Double-Charge: Idempotency Explained (Part 1)* | [watch](https://youtu.be/KE7CCnTfQqk) |
+| 2 | *16 of 25 Charged Twice: Idempotency Race Conditions (Part 2)* | [watch](https://youtu.be/g19jax6Auxc) |
+| 3 | *3 Ways Your Queue Silently Duplicates & Drops Work (Part 3)* | [watch](https://youtu.be/rR81FtkdqT8) |
+| 4 | *Exactly-Once Delivery Is a Lie: The Outbox Pattern (Part 4)* | [watch](https://youtu.be/z7bLGBmXlck) |
 
-Episode 2 — *Your Idempotency Key Has a Race Condition* (https://www.youtube.com/watch?v=g19jax6Auxc)
+The video titles carry a hook and a `(Part N)` suffix; the folders above are
+named after each episode's thesis. They are the same four episodes.
 
 Each episode's folder here is the demo from that video, and every figure quoted
 on screen is reproducible from it.

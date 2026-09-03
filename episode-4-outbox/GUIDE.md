@@ -2,6 +2,8 @@
 
 **A written companion to Episode 4 of System Sense — [Exactly-Once Is a Lie](../).**
 
+**Watch it instead:** [Exactly-Once Delivery Is a Lie: The Outbox Pattern (Part 4)](https://youtu.be/z7bLGBmXlck) · [full playlist](https://www.youtube.com/playlist?list=PLMlexv0Ndaog)
+
 The video is 18 minutes and had to leave things out. This does not. It covers
 the same ground more slowly, with the code in full, and then keeps going into
 the questions the runtime budget cut: running more than one relay, what happens
@@ -750,8 +752,9 @@ events with nothing killed at all.
   [1 — duplicates](../episode-1-duplicates/) ·
   [2 — idempotency keys](../episode-2-keys/) ·
   [3 — queues](../episode-3-queues/)
-- The video for this episode, and the full playlist, are linked from the
-  [root README](../README.md).
+- The video for this episode:
+  [Exactly-Once Delivery Is a Lie: The Outbox Pattern (Part 4)](https://youtu.be/z7bLGBmXlck),
+  and the [full playlist](https://www.youtube.com/playlist?list=PLMlexv0Ndaog).
 - Stripe's idempotency documentation, for the reference implementation of the
   consumer half.
 - The Debezium outbox event router, if section 14 sounded like your problem.
