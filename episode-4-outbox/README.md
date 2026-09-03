@@ -106,7 +106,7 @@ the kill switch still fired, on the same three orders, and cost nothing:
 
 Something else publishes the events afterwards, from the table. That is
 `relay/main.py`, and the delay it adds is the honest price of the pattern:
-**131 ms median, 170 ms worst** across the twelve rows here.
+**131.3 ms median, 169.6 ms at the worst** across the twelve rows here.
 
 ## The relay has the same bug, and this time it does not matter
 
