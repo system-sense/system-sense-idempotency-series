@@ -15,7 +15,7 @@ Caching series, with Redis added in Episode 3 where it earns its place.
 | 1. The Retry That Charged Your Customer Twice | [`episode-1-duplicates/`](episode-1-duplicates/) | A timeout is not a failure. The request succeeded; only the response was lost. | [**watch**](https://www.youtube.com/watch?v=KE7CCnTfQqk) |
 | 2. Your Idempotency Key Has a Race Condition | [`episode-2-keys/`](episode-2-keys/) | "Check, then insert" is TOCTOU, and the `UNIQUE` constraint only helps if you claim the key before you do the work. | [**watch**](https://www.youtube.com/watch?v=g19jax6Auxc) |
 | 3. 3 Ways Your Queue Silently Loses Work | [`episode-3-queues/`](episode-3-queues/) | Visibility timeouts, poison messages, dead-letter queues. Episode 2's endpoint, unchanged, still charging people twice. | demo built |
-| 4. Exactly-Once Delivery Is a Lie | `episode-4-outbox/` | Exactly-once *delivery* is impossible. Exactly-once *effects* are not. | not built |
+| 4. Exactly-Once Delivery Is a Lie | [`episode-4-outbox/`](episode-4-outbox/) | The dual write. Exactly-once *delivery* is impossible; exactly-once *effects* are at-least-once plus an idempotent consumer. | demo built |
 
 ## Watch
 

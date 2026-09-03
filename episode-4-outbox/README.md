@@ -1,16 +1,17 @@
-# Episode 3 — 3 Ways Your Queue Silently Loses Work
+# Episode 4 — Exactly-Once Delivery Is a Lie
 
-Episode 2 ended with an HTTP endpoint that cannot be made to charge twice for
-one key. **That endpoint is in this folder, unchanged.** `app/` is byte-for-byte
-Episode 2's, pinned to the handler that works:
+Episode 2 shipped an endpoint that cannot charge twice for one key. Episode 3
+shipped a consumer that holds its lease, dead-letters what it cannot process,
+and passes the producer's key on. **Both of them are in this folder, unchanged:**
 
 ```bash
-diff -r ../episode-2-keys/app app        # no output
+diff -r ../episode-3-queues/app app          # no output
+diff -r ../episode-3-queues/worker worker    # no output
 ```
 
-Then a queue was put in front of it, and the same job started running twice
-again — with nothing wrong in the application, nothing wrong in the queue, and
-nobody having decided to retry anything.
+Then twelve orders were placed, the producer was killed three times, and
+**$120 disappeared** — with nothing wrong in the endpoint, nothing wrong in the
+consumer, and no queue anywhere able to help.
 
 ```bash
 docker compose up --build
@@ -22,329 +23,349 @@ Then, in another terminal:
 ./scripts/capture-demo.sh
 ```
 
-That script is the whole episode. Eight scenarios, one application, and every
-variable on the consumer. It writes what it measured to `capture/`.
+That script is the whole episode. Six scenarios and one agent segment, the same
+twelve orders throughout, and every variable in the fifteen lines between a
+database and a queue. It writes what it measured to `capture/`.
 
 ---
 
+## The bug is two lines apart, and both of them are correct
+
+An order was placed. Two things have to become true because of it:
+
+```python
+async with state["db"].acquire() as con:                        # PostgreSQL
+    order_id = await con.fetchval(INSERT_ORDER, ...)
+                                                                # <- here
+mid = await publish(fields)                                     # Redis
+```
+
+There is no transaction that spans those two systems. Whichever you do first,
+there is a moment when one is true and the other is not, and nothing anywhere
+will ever reconcile them, because neither side knows the other exists.
+
+**This is not a bug in the handler.** There is nothing in it to fix. It is
+called the dual write, and no amount of care, no retry policy and no queue
+feature removes it.
+
 ## What it measured here
 
-Twenty-five jobs, $40 each, published to a Redis Stream. Two workers in a
-consumer group. A **two-second visibility timeout** — an entry a worker has held
-for longer than that may be taken by somebody else.
+Twelve orders, $40 each: **$480**. The producer is killed on every fourth one —
+a real `os._exit(1)`, no unwinding, no shutdown hook, which is what a kill -9,
+an OOM kill, a rolling deploy and a spot-instance reclaim all look like from
+inside the process. Docker restarts it in about half a second, which is why
+nobody notices.
 
-The payment takes `1200 + (customer_id * 137) % 2400` ms, which is 1.2 to 3.6
-seconds. **Fourteen of the twenty-five jobs outlive the two-second lease by
-construction.** Nothing is killed. Nothing fails. Nothing times out.
-
-| | jobs | deliveries | run twice | charges | owed | collected |
+| | orders committed | events published | lost | phantom | owed | taken |
 | --- | --- | --- | --- | --- | --- | --- |
-| Lease expires mid-job | 25 | 32 | **7** | 32 | $1,000 | **$1,280** |
-| The same, holding the lease | 25 | 25 | 0 | 25 | $1,000 | $1,000 |
-| **The same, with Episode 2's key** | 25 | **29** | **4** | **25** | $1,000 | **$1,000** |
+| `COMMIT` then publish | 12 | **9** | **3** | 0 | $480 | **$360** |
+| publish then `COMMIT` | **9** | 12 | 0 | **3** | $360 | **$480** |
+| both, in one transaction | 12 | 12 | **0** | **0** | $480 | **$480** |
 
-Read the first row and the last row together. That is the episode.
+Same twelve orders. Same three kills, at the same three sequence numbers, in the
+same place in the code. Read the first two rows as one finding, because swapping
+the order of two lines did not remove the window — it moved it:
 
-In the first, seven jobs were handed to a second worker and seven customers paid
-twice — $280 over. In the last, the queue did **exactly the same thing**: four
-jobs were still handed to a second worker, four entries were still claimed off
-an expired lease. The books:
+```
+[orders] seq=3  customer=3  order=3 COMMITTED -> PUBLISHED 1788436266442-0
+[orders] seq=4  customer=4  *** KILLED after COMMIT, before publish ***
+[orders] seq=5  customer=5  order=5 COMMITTED -> PUBLISHED 1788436266966-0
+```
+
+**Commit first and you lose events.** Three orders sit in `orders` looking
+completely normal. Nothing downstream will ever hear about them, so nothing will
+ever charge for them, and nothing will retry — because nothing knows there is
+anything to retry. $120 of revenue, gone, with every dashboard green.
+
+**Publish first and you lose orders, which is worse.** Three customers were
+charged $40 each for an order that is not in the database. Support has a payment
+and nothing to attach it to. That is not a lost sale, it is a chargeback.
+
+## The transactional outbox
+
+Do not publish from the request handler. **Write the event into a table in the
+same database, inside the same transaction as the order:**
+
+```python
+async with con.transaction():
+    order_id  = await con.fetchval(INSERT_ORDER,  o.seq, o.customer_id, ...)
+    outbox_id = await con.fetchval(INSERT_OUTBOX, order_id, STREAM, payload)
+```
+
+One commit. Both facts. One system. There is no window to be killed in — and
+the kill switch still fired, on the same three orders, and cost nothing:
+
+```
+   orders committed          12
+   events on the stream      12   (12 distinct keys)
+   events lost                0   <- committed, never published
+   phantom events             0   <- published, never committed
+   owed  $    480.00
+   taken $    480.00
+```
+
+Something else publishes the events afterwards, from the table. That is
+`relay/main.py`, and the delay it adds is the honest price of the pattern:
+**131 ms median, 170 ms worst** across the twelve rows here.
+
+## The relay has the same bug, and this time it does not matter
+
+Look at what the relay does: publish, then mark the row sent. Two systems again.
+It cannot not have the producer's bug. So kill it in the same place:
+
+```
+[relay] outbox=1 seq=1 customer=1 key=k_efed0395701d PUBLISHED 1788436366875-0 attempt=1
+[relay] outbox=1 *** KILLED after publish, before marking sent ***
+[relay] outbox=1 seq=1 customer=1 key=k_efed0395701d PUBLISHED 1788436367105-0 attempt=2
+```
+
+The row was still unpublished as far as the database was concerned, so the next
+relay published it again. One order, one key, **two message ids**. Three times
+over, and here is the entire argument of the series in two rows:
+
+| twelve orders, relay killed 3× | events | duplicate publishes | charges | taken |
+| --- | --- | --- | --- | --- |
+| Episode 2's key **off** | 15 | **3** | **15** | **$600** |
+| Episode 2's key **on** | 15 | **3** | **12** | **$480** |
+
+**The duplicate publishing did not stop. The second charge did.**
 
 ```
  seq | customer_id | deliveries |       outcomes
 -----+-------------+------------+-----------------------
-  12 |          12 |          2 | charged then replayed
-  14 |          14 |          2 | charged then replayed
-  16 |          16 |          2 | charged then replayed
-  17 |          17 |          2 | charged then replayed
+   1 |           1 |          2 | charged then replayed
+   2 |           2 |          2 | charged then replayed
+   3 |           3 |          2 | charged then replayed
 ```
 
-**The redelivery did not stop. The second charge did.** You do not fix a queue
-by making it deliver once. You cannot. You fix it by making the second delivery
-cost nothing.
+That is what the outbox actually promises, and it is worth being precise about
+because the pattern is routinely oversold:
 
-### The lease is a guess, and it is a guess about the future
+> **The outbox does not eliminate duplicates. It eliminates *loss*.**
+> It converts an unrecoverable failure into a duplicate — and a duplicate is
+> what Episodes 2 and 3 were built to absorb.
 
-Nothing in `XREADGROUP` knows how long the work takes. `VISIBILITY_TIMEOUT_MS`
-is a number somebody typed into a config file before the work existed, and every
-time it is lower than the work, the job runs twice. Two seconds against a
-payment that takes up to 3.6:
+Which is the title of the series, stated the other way around. Exactly-once
+*delivery* is not achievable — not here, not in Kafka, not anywhere, because two
+parties over a lossy channel cannot both become certain in any finite number of
+messages. Exactly-once *effects* are achievable, and this is all they have ever
+been:
 
-```
-[worker-1] NEW    1788373859599-0 seq=12 customer=12 delivery=1
-[worker-2] CLAIM  1788373859599-0 seq=12 customer=12 delivery=2  (idle > 2000 ms)
-[worker-1] CHARGED 1788373859599-0 seq=12 customer=12 ch_8ec6bb91ac0449bf in 2.86s
-[worker-2] CHARGED 1788373859599-0 seq=12 customer=12 ch_ec2b634f572e4b2e in 2.86s
-```
+**at-least-once delivery + an idempotent consumer.**
 
-One entry, two deliveries, two charge ids. Both workers were correct. Both
-finished. Customer 12 paid $80.
+## Everything killed at once
 
-### Extending the lease helps, and is not the fix
-
-`HEARTBEAT=1` re-claims the entry every second while the work runs, so the lease
-cannot expire underneath it. It cost **43 lease extensions** across 25 jobs, and
-duplicates went to zero.
-
-It is still not the fix, and the next scenario is why: a lease you are holding
-can still be lost. The process can be killed, the network can partition, a
-garbage collection can stop the world for longer than the timeout. Heartbeating
-lowers the rate. Only an idempotent consumer changes the outcome.
-
-## Ack-before and ack-after are the two delivery guarantees
-
-Not a style preference. There is no third branch, and your queue library already
-picked one for you.
-
-Five jobs. One worker, which reads all five in one batch — as every queue client
-does (SQS `MaxNumberOfMessages`, Kafka `max.poll.records`). At 1.5 seconds into
-the first of them, a 3.5-second payment:
-
-```bash
-docker compose kill worker-1
-```
-
-Identical setup, identical kill, identical moment. The only difference is which
-side of the work the `XACK` is on:
-
-| | `ACK_MODE=after` | `ACK_MODE=before` |
-| --- | --- | --- |
-| | at-least-once | at-most-once |
-| Pending after the kill | **5** | **0** |
-| Deliveries | 6 | 1 |
-| Jobs run twice | **1** | 0 |
-| Jobs never attempted | 0 | **4** |
-| Owed | $200 | $200 |
-| Collected | **$240** | **$40** |
-
-Ack after the work and a crash duplicates. Ack before it and a crash **loses**:
-four jobs, $160 of work, acknowledged and never done. And the queue is not
-hiding it — the queue has no idea. `pending=0`, `lag=0`, depth flat. Every
-dashboard green.
-
-Both runs leave one row in `job_runs` reading `started` with no `finished_at`.
-That row is the only trace a killed worker leaves anywhere.
-
-## The poison message
-
-One message with a payload the consumer rejects on sight — `amount_cents: -1`.
-Not a transient failure. No number of retries converts it into one.
-
-With no delivery limit, watched for thirty seconds:
+The finale scenario runs all of it together: the producer killed on every fourth
+order, the relay killed three times before it could mark a row sent.
 
 ```
-   t=+  0.0s  dead-letter depth 0   pending 1
-   t=+ 10.1s  dead-letter depth 0   pending 1
-   t=+ 20.2s  dead-letter depth 0   pending 1
-   t=+ 29.3s  dead-letter depth 0   pending 1
+   orders committed          12
+   events on the stream      15   (12 distinct keys)
+   events lost                0
+   phantom events             0
+   duplicate publishes        3
+   charges                   12
+   owed  $    480.00
+   taken $    480.00
 ```
 
-**16 deliveries in 31.4 seconds** — one every two seconds, which is the
-visibility timeout, forever. The dead-letter queue was empty the whole time and
-no alert fired, because there was nothing to fire on. A dead-letter queue at
-depth zero is not evidence that nothing is wrong.
+Six process deaths. Nothing lost, nothing charged twice, and not one line of
+`app/` or `worker/` different from what Episodes 2 and 3 shipped.
 
-Meanwhile `XLEN` reads 1, `lag` reads 0, and a graph of queue depth is a
-horizontal line. The queue has depth, has a consumer, has throughput, and is
-doing no work at all.
+## What Kafka's "exactly-once semantics" actually covers
 
-With `MAX_DELIVERIES=5` and somewhere to put it:
+It is real, it is genuinely useful, and it is narrower than its name.
 
-| | no limit | limit of 5 |
-| --- | --- | --- |
-| Deliveries | 16 and counting | **5** |
-| Time occupying a worker | 31.4 s and counting | **9.6 s** |
-| Dead-letter depth | 0 | **1** |
-| Time to first alert | never | **10.1 s** |
+Kafka's EOS gives you an **idempotent producer** (a sequence number per producer
+per partition, so a retried `produce` is deduplicated by the broker) and
+**transactions** across topics and partitions, which makes
+consume-transform-produce atomic: the output records and the input offsets
+commit together, or neither does.
 
-```
-   t=+  9.1s  dead-letter depth 0   pending 1
-   t=+ 10.1s  dead-letter depth 1   pending 0   *** ALERT: work this system accepted will never be done ***
-```
+Every one of those guarantees ends at the edge of Kafka.
 
-The three good jobs published behind it were charged once each, $120 for $120.
+Your call to Stripe is not in Kafka's transaction. Your write to Postgres is not
+in Kafka's transaction. Read a message, charge a customer, commit the offset —
+Kafka can make the offset commit atomic with a write *to Kafka*, and it has
+nothing whatsoever to say about the $40. **Exactly-once within the log is not
+exactly-once in your system**, and the gap between those two sentences is where
+this entire series lives.
 
-**A dead-letter queue is a diagnostic instrument, not a bin.** Its depth is not
-"failures we are ignoring", it is "the processing SLO is broken and here is the
-evidence, with the error and the delivery count that sent it there". The
-threshold in `scripts/dlq-watch.py` is **one**, deliberately: this is not a
-capacity problem. One message in it is one piece of work this system accepted
-and will never do.
+CDC / log tailing (Debezium, or Postgres logical decoding directly) is the same
+outbox pattern with the relay deleted and the write-ahead log read instead. Same
+at-least-once property, for the same reason: something has to record how far it
+got, and that record is not in the same transaction as the send. The honest
+trade is that you run no relay and instead take on a Debezium-shaped operational
+dependency — and your table schema quietly becomes a public API.
 
-A dead-letter queue nobody alerts on is a bin.
+## The same problem, where it is being rediscovered
 
-## Retries break ordering
+An agent workflow is a durable execution: steps, checkpointed, so a crash
+resumes rather than restarts. Resuming means **replaying** the steps already
+taken, so every side effect in the workflow is about to be attempted again.
+That is this series, in a costume.
 
-Ten jobs, published in order. Number five fails once, goes back, and comes
-around again:
+There is one genuinely new wrinkle, and it is why this is not a rerun:
+**the model's output is not deterministic.** So the thing everybody reaches for
+first — hash the step's payload, skip it if you have seen that hash — cannot
+work. Not "works badly". Cannot work.
 
-```
-published   1  2  3  4  5  6  7  8  9  10
-completed   1  2  3  4  6  7  8  9  10  5
-```
+Four agent runs, each replayed three times, twelve attempts, and the stub model
+returned **twelve different strings**:
 
-**Five pairs finished out of order**, and the retried message finished tenth of
-ten — behind five messages published after it. If any consumer downstream
-assumed ordering, it does not hold any more, and nothing anywhere reported an
-error.
-
----
-
-## The eight lines the episode is about
-
-All of it is in [`worker/main.py`](worker/main.py), and the fork is two `XACK`
-calls. In the read loop, before any work has happened:
-
-```python
-if ACK_MODE == "before":                                      # at-most-once
-    await r.xack(STREAM, GROUP, *[mid for mid, _ in batch])
-for mid, fields in batch:
-    await handle(r, mid, fields, claimed)
-```
-
-and at the end of `handle`, reached only if the work actually succeeded:
-
-```python
-if ACK_MODE == "after":                                       # at-least-once
-    await r.xack(STREAM, GROUP, mid)
-```
-
-That second one is not reached when the handler throws, which is what turns a
-failure into a redelivery rather than a silent drop.
-
-And the loop above it, which is the visibility timeout made visible:
-
-```python
-batch, claimed = await claim_expired(r), True   # XAUTOCLAIM: idle > N ms
-if not batch:
-    batch, claimed = await read_new(r), False   # XREADGROUP >
-```
-
-`XAUTOCLAIM` does not ask whether the previous holder is dead. It cannot know.
-All it knows is that the entry has been idle, and **idle is not a synonym for
-abandoned** — a worker three seconds into a three-and-a-half-second payment is
-idle by this definition, and is about to have its job taken.
-
-## Why the key is minted by the producer
-
-`scripts/enqueue.py` generates one key per job and puts it in the message. It
-has to be there, and not in the consumer: **a consumer cannot tell delivery two
-from delivery one.** That is the entire problem. A key it generates for itself
-is a fresh key every time and protects nothing.
-
-The message id would work too, and is tempting, and is not enough — for the
-reason Episode 4 is about.
-
-## Three sets of books
+| twelve attempts, keyed on | charged | replayed | owed | taken |
+| --- | --- | --- | --- | --- |
+| the payload (content) | **12** | 0 | $160 | **$480** |
+| `(run_id, step_index, action_type)` | **4** | **8** | $160 | **$160** |
 
 ```
-public.charges          what our application believes it did
-public.idempotency_keys one row per job, claimed before the work   (Episode 2)
-processor.ledger        what actually happened to money
-public.job_runs         one row per DELIVERY — what the queue did      (NEW)
+run_001 replay 1  customer 1   key=k_run_001:2:charge_customer   CHARGED   ch_85663d8e...
+run_001 replay 2  customer 1   key=k_run_001:2:charge_customer   replayed  (the same response, no second charge)
+run_001 replay 3  customer 1   key=k_run_001:2:charge_customer   replayed  (the same response, no second charge)
 ```
 
-`job_runs` is new here and it earns its place in exactly one scenario: the last
-one. Money alone cannot tell "the queue stopped redelivering" from "the queue
-redelivered and it stopped mattering", and those are very different systems.
-It redelivered.
+You do not key on **what** the step produced. You key on **where the step is**.
+That triple is fixed by the workflow's structure before the model is ever
+called, and it is identical on every replay — which is exactly what Episode 2
+needed a key to be. It is Episode 2's idempotency key, derived from position
+instead of from content.
+
+**There is no model in this repository, and there must not be one.** A real
+model call costs money and returns something different every time, and this
+series' rule is that every number on screen is reproducible by anyone who clones
+the repo. `draft_note()` in `scripts/agent-run.py` is a stub that does the one
+thing that matters: it returns a different string on every call.
+
+## The reconciler is the tell
+
+`scripts/reconcile.py` puts the database's orders beside the queue's events and
+counts the ways they disagree. It is useful, and needing it is the diagnosis:
+
+**you cannot write a reconciler for a failure whose whole nature is that neither
+side knows it happened.** The only reason this one works is that the key is on
+both sides of it — which is the fix, not the diagnosis.
 
 ## How the pieces fit
 
 ```
-scripts/enqueue.py           the producer. XADDs and exits. Never retries anything.
-  │  XADD checkouts
+scripts/place-orders.py      the client. Places orders. Never retries one.
+  │  POST /api/orders
+  ▼
+producer/  (FastAPI, :8100)  NEW. The dual write, and the window inside it.
+  │                          PUBLISH_MODE=commit_first|publish_first|outbox
+  │                          CRASH_EVERY=N  -> os._exit(1) in the window
+  ├── INSERT orders ─────────┐
+  └── INSERT outbox ─────────┤ one transaction
+                             ▼
+                        postgres:16         orders, outbox, and Episodes 1–3's books
+                             │
+relay/  (a loop)             │  SELECT ... WHERE published_at IS NULL
+  │  NEW. Publishes from the outbox, then marks the row sent. Two systems again:
+  │  CRASH_AFTER_PUBLISH=N kills it in between, and the row goes out twice.
   ▼
 redis:7 (:6379)              stream `checkouts`, consumer group `payments`
-  │  XREADGROUP / XAUTOCLAIM / XACK / XPENDING
   ▼
-worker-1, worker-2           ack before or after; lease; delivery limit; the key
-  │  POST /api/checkout      Idempotency-Key: <the producer's key>
+worker-1, worker-2           EPISODE 3'S, UNCHANGED. Lease held, key passed on.
+  │  POST /api/checkout      Idempotency-Key: <the order's key>
   ▼
 app/  (FastAPI, :8000)       EPISODE 2'S, UNCHANGED. IDEMPOTENCY_MODE=claim.
-  │  POST /charges
   ▼
 processor/  (FastAPI, :9000) the stand-in for Stripe. Slow for some customers.
-  │
-  ▼
-postgres:16                  the three books above
 ```
+
+## Why the key is minted by the producer
+
+`producer/main.py` generates one key per **order**, before either write, and
+carries it in the event. Episode 3 established that a consumer cannot mint it —
+a consumer cannot tell delivery two from delivery one. Episode 4 is why the
+message id will not do either: **the relay can publish the same intent under two
+different message ids**, and it did, three times, in the table above.
+
+The order is the intent. The key belongs to the order.
 
 ## Try it yourself
 
 ### The knob
 
 ```bash
-# The bug, with nothing killed and nothing failing:
-ACK_MODE=after VISIBILITY_TIMEOUT_MS=2000 docker compose up --build
-python3 scripts/enqueue.py --customers $(seq 1 25)
-python3 scripts/queue-state.py --label mid-flight
+# Lose three events and $120, with nothing wrong in any handler:
+PUBLISH_MODE=commit_first CRASH_EVERY=4 docker compose up --build
+python3 scripts/place-orders.py --customers $(seq 1 12)
+python3 scripts/reconcile.py --label the-damage
 
-# Now raise the lease above the slowest payment. The duplicates disappear
-# without a line of code changing:
-VISIBILITY_TIMEOUT_MS=5000 docker compose up -d --force-recreate worker-1 worker-2
+# The mirror image. Money moves for orders that do not exist:
+PUBLISH_MODE=publish_first CRASH_EVERY=4 docker compose up -d --force-recreate orders
+
+# The fix. Same kills, same places, nothing lost:
+PUBLISH_MODE=outbox CRASH_EVERY=4 docker compose up -d --force-recreate orders
 ```
 
-They have not been fixed. They have been hidden, which is how this reaches
-production. Set `VISIBILITY_TIMEOUT_MS=5000` and add one slow customer, or one
-GC pause, and they are back.
+Now set `CRASH_EVERY=0` and watch the bug disappear without having been fixed —
+which is where most systems are, right up until a deploy.
 
-The setting that actually fixes it:
+### The relay, and the point of the whole series
 
 ```bash
+# Kill the relay before it can mark rows sent, with Episode 2's key OFF:
+PUBLISH_MODE=outbox CRASH_AFTER_PUBLISH=3 IDEMPOTENT_CONSUMER=0 \
+  docker compose up -d --force-recreate orders relay worker-1 worker-2
+python3 scripts/place-orders.py --customers $(seq 1 12)
+python3 scripts/reconcile.py --label key-off        # 15 events, 15 charges, $600
+
+# The identical run, key ON:
 IDEMPOTENT_CONSUMER=1 docker compose up -d --force-recreate worker-1 worker-2
+python3 scripts/reconcile.py --label key-on         # 15 events, 12 charges, $480
 ```
 
-### The rest
+### The agent segment
 
 ```bash
-python3 scripts/enqueue.py --poison                       # never succeeds
-python3 scripts/dlq-watch.py --seconds 30                 # watch nothing happen
-MAX_DELIVERIES=5 docker compose up -d --force-recreate worker-1  # now watch it
-
-docker compose kill worker-1                              # at 1.5s into a 3.5s job
-python3 scripts/queue-state.py --label after-the-kill
+python3 scripts/agent-run.py --runs 4 --replays 3 --key payload
+python3 scripts/agent-run.py --runs 4 --replays 3 --key position
 ```
 
-Episode 2's probes still work, because Episode 2's endpoint is still here:
+Episodes 2 and 3's probes still work, because their code is still here:
 
 ```bash
-python3 scripts/race.py --customer 17 --gap-ms 3          # -> 409, in flight
-python3 scripts/race.py --customer 18 --gap-ms 2000       # -> replayed
+python3 scripts/race.py --customer 17 --gap-ms 3     # -> 409, in flight
+python3 scripts/enqueue.py --poison                  # -> never succeeds
 ```
 
-Your numbers will differ. Seven jobs were stolen here out of the fourteen that
-outlive the two-second lease, because a steal also needs a worker to be free at
-the moment the lease expires — the other seven were slow enough to qualify and
-nobody was available to take them. Seven in both runs of this script on this
-machine; on yours it depends on how fast your disk and Docker are.
+Your numbers will differ in the timings and not in the counts. The kills are
+deterministic on `seq`, so three orders are lost in `commit_first` on any
+machine; the relay lag (131 ms median here) depends on your disk.
 
-## What this repository deliberately does not have
+## Four sets of books, and the pair that matters
 
-Everything fixed here is on the **consumer** side. The producer in
-`scripts/enqueue.py` is one `XADD` and an exit, and it has never been asked what
-happens if it crashes between writing to the database and publishing to the
-stream — or if it retries the publish and the same job goes on twice under two
-different message ids.
+```
+public.orders           the business fact                            (NEW)
+public.outbox           the event, committed with it                 (NEW)
+public.charges          what our application believes it did
+public.idempotency_keys one row per intent, claimed before the work   (Ep 2)
+public.job_runs         one row per DELIVERY — what the queue did     (Ep 3)
+processor.ledger        what actually happened to money
+```
 
-No queue can fix that for you. That is Episode 4.
+The pair this episode is about is `orders` against the stream itself, and it is
+the pair nobody has, because the two of them live in different systems and no
+transaction spans them.
 
 ## Files
 
 | Path | What it is |
 | --- | --- |
-| `worker/main.py` | the consumer. Two `XACK` calls, eight lines apart. |
-| `scripts/enqueue.py` | the producer. Mints the key, publishes, exits. |
-| `scripts/queue-state.py` | `XLEN`, `XINFO GROUPS`, `XPENDING` — the instrument panel |
-| `scripts/dlq-watch.py` | something that alerts on the dead-letter queue |
-| `scripts/resp.py` | a Redis client in fifty lines, so `scripts/` needs no `pip install` |
-| `db/init.sql` | Episode 2's schema, plus `job_runs` |
-| `app/`, `processor/` | Episode 2's, unchanged |
-| `scripts/capture-demo.sh` | runs all eight scenarios and records what happened |
+| `producer/main.py` | the dual write, three arrangements of it, and the kill switch |
+| `relay/main.py` | publishes the outbox, and has the same bug harmlessly |
+| `scripts/place-orders.py` | the client. Places orders and never retries one. |
+| `scripts/reconcile.py` | the database's orders beside the queue's events |
+| `scripts/agent-run.py` | a replayed agent run, keyed two ways. No model, on purpose. |
+| `db/init.sql` | Episode 3's schema, plus `orders` and `outbox` |
+| `app/`, `worker/`, `processor/` | Episodes 2 and 3's, unchanged |
+| `scripts/capture-demo.sh` | runs all of it and records what happened |
 | `capture/` | the committed evidence. Every number in the video comes from here. |
 
 ---
 
 Part of the **System Sense — Idempotency** mini-series.
 Full playlist: https://www.youtube.com/playlist?list=PLMlexv0Ndaog
-Previous episode: [Episode 2 — Your Idempotency Key Has a Race Condition](../episode-2-keys/)
+Previous episode: [Episode 3 — 3 Ways Your Queue Silently Loses Work](../episode-3-queues/)
