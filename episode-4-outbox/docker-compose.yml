@@ -112,10 +112,12 @@ services:
   #    IDEMPOTENT_CONSUMER=1   pass the producer's key to Episode 2's endpoint.
   #    WORKER_BATCH=N          how many entries to take per read.
   #
-  #  Run the whole thing the wrong way and watch the same job pay twice:
+  #  EPISODE 4 CHANGES ONLY THE DEFAULTS, and it changes them to Episode 3's
+  #  answers: the lease is held, there is a delivery limit, and the producer's
+  #  key is passed on. This consumer is finished. It cannot be made to charge
+  #  twice for one key however many times the queue hands it the same job.
   #
-  #      ACK_MODE=after VISIBILITY_TIMEOUT_MS=2000 docker compose up --build
-  #      python3 scripts/enqueue.py --customers $(seq 1 25)
+  #  Everything this episode loses, it loses in front of it.
   #
   #  Two workers rather than `deploy: replicas: 2` so that one of them can be
   #  killed by name on camera:  docker compose kill worker-1
@@ -128,10 +130,10 @@ services:
       DATABASE_URL: "postgres://sysense:sysense@postgres:5432/sysense"
       WORKER_NAME: "worker-1"
       ACK_MODE: "${ACK_MODE:-after}"
-      VISIBILITY_TIMEOUT_MS: "${VISIBILITY_TIMEOUT_MS:-2000}"
-      HEARTBEAT: "${HEARTBEAT:-0}"
-      MAX_DELIVERIES: "${MAX_DELIVERIES:-0}"
-      IDEMPOTENT_CONSUMER: "${IDEMPOTENT_CONSUMER:-0}"
+      VISIBILITY_TIMEOUT_MS: "${VISIBILITY_TIMEOUT_MS:-15000}"
+      HEARTBEAT: "${HEARTBEAT:-1}"
+      MAX_DELIVERIES: "${MAX_DELIVERIES:-5}"
+      IDEMPOTENT_CONSUMER: "${IDEMPOTENT_CONSUMER:-1}"
       WORKER_BATCH: "${WORKER_BATCH:-1}"
       HTTP_TIMEOUT_SECONDS: "30"
     depends_on:
@@ -150,12 +152,90 @@ services:
       DATABASE_URL: "postgres://sysense:sysense@postgres:5432/sysense"
       WORKER_NAME: "worker-2"
       ACK_MODE: "${ACK_MODE:-after}"
-      VISIBILITY_TIMEOUT_MS: "${VISIBILITY_TIMEOUT_MS:-2000}"
-      HEARTBEAT: "${HEARTBEAT:-0}"
-      MAX_DELIVERIES: "${MAX_DELIVERIES:-0}"
-      IDEMPOTENT_CONSUMER: "${IDEMPOTENT_CONSUMER:-0}"
+      VISIBILITY_TIMEOUT_MS: "${VISIBILITY_TIMEOUT_MS:-15000}"
+      HEARTBEAT: "${HEARTBEAT:-1}"
+      MAX_DELIVERIES: "${MAX_DELIVERIES:-5}"
+      IDEMPOTENT_CONSUMER: "${IDEMPOTENT_CONSUMER:-1}"
       WORKER_BATCH: "${WORKER_BATCH:-1}"
       HTTP_TIMEOUT_SECONDS: "30"
+
+  # ─────────────────────────────────────────────────────────────────────────
+  #  EPISODE 4'S FIRST NEW SERVICE, and the one with the bug in it.
+  #
+  #  Episode 3's producer was `scripts/enqueue.py`: one XADD and an exit. It had
+  #  no database, so it could not have this bug. This one has a database, and an
+  #  order has to become true in two places at once.
+  #
+  #    PUBLISH_MODE=commit_first   the row, then the event. Loses events.
+  #    PUBLISH_MODE=publish_first  the event, then the row. Loses orders, which
+  #                                is worse: money moves for something that is
+  #                                not in the database.
+  #    PUBLISH_MODE=outbox         both, in one transaction, to one database.
+  #
+  #    CRASH_EVERY=N               kill the process on every Nth order, inside
+  #                                the window. A real os._exit(1): no unwinding,
+  #                                no shutdown hook. Docker restarts it, because
+  #                                that is also what happens.
+  #
+  #  Watch it lose three orders' worth of money:
+  #
+  #      PUBLISH_MODE=commit_first CRASH_EVERY=4 docker compose up --build
+  #      python3 scripts/place-orders.py --customers $(seq 1 12)
+  #      python3 scripts/reconcile.py
+  #
+  #  `restart: unless-stopped` is not scaffolding for the demo. It is the
+  #  reason the bug is invisible in production: the process comes back in two
+  #  seconds, the dashboard shows a blip, and the event is still gone.
+  # ─────────────────────────────────────────────────────────────────────────
+  orders:
+    build: ./producer
+    environment:
+      DATABASE_URL: "postgres://sysense:sysense@postgres:5432/sysense"
+      REDIS_URL: "redis://redis:6379/0"
+      PUBLISH_MODE: "${PUBLISH_MODE:-outbox}"
+      CRASH_EVERY: "${CRASH_EVERY:-0}"
+    ports:
+      - "8100:8100"
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # ─────────────────────────────────────────────────────────────────────────
+  #  EPISODE 4'S SECOND NEW SERVICE, and the one that makes the pattern work.
+  #
+  #  Reads the outbox, publishes, marks the row sent. Its own two writes are
+  #  once again two systems — it has the producer's bug and cannot not have it —
+  #  but here the bug costs a DUPLICATE rather than a LOSS, and duplicates are
+  #  what Episodes 2 and 3 were about.
+  #
+  #    POLL_MS               the latency the outbox costs you. The honest price.
+  #    CRASH_AFTER_PUBLISH=N kill it after the XADD and before the row is marked
+  #                          sent, until N rows have gone out twice.
+  #
+  #  Show the whole argument closing on itself:
+  #
+  #      PUBLISH_MODE=outbox CRASH_AFTER_PUBLISH=3 IDEMPOTENT_CONSUMER=0 \
+  #        docker compose up --build          # three duplicate publishes, $120 over
+  #      IDEMPOTENT_CONSUMER=1 ...            # three duplicate publishes, $0 over
+  # ─────────────────────────────────────────────────────────────────────────
+  relay:
+    build: ./relay
+    environment:
+      DATABASE_URL: "postgres://sysense:sysense@postgres:5432/sysense"
+      REDIS_URL: "redis://redis:6379/0"
+      RELAY_NAME: "relay"
+      POLL_MS: "${POLL_MS:-200}"
+      RELAY_BATCH: "${RELAY_BATCH:-10}"
+      CRASH_AFTER_PUBLISH: "${CRASH_AFTER_PUBLISH:-0}"
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
 
 volumes:
   pgdata:
