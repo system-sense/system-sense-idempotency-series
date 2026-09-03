@@ -18,6 +18,18 @@ Then, in another terminal:
 That script is the whole episode. It runs in about three minutes and writes
 everything it measured to `capture/`.
 
+> ### Would you rather read it?
+>
+> **[GUIDE.md](GUIDE.md)** is the written companion: the same ground more
+> slowly, with the code in full, plus the questions the video's runtime cut — every place a duplicate can come from
+> and which ones you control, what RFC 9110 actually says about `POST`, how to
+> configure a retry that is not a duplicate generator, and why cancelling a
+> request does not cancel the work.
+>
+> This README is what the demo *is* and how to run it. The guide is the concept,
+> taught, with this demo as the evidence.
+
+
 ---
 
 ## What it measured here
@@ -108,6 +120,8 @@ One customer, one press of Pay:
 python3 scripts/checkout.py 18      # answers in 1.3s — one charge
 python3 scripts/checkout.py 17      # takes 3.5s — times out twice, charged twice
 ```
+
+Customer 17 owes **$40** and was charged **$80**. One press of Pay.
 
 Then ask the processor's books what really happened:
 

@@ -25,6 +25,17 @@ Then, in another terminal:
 That script is the whole episode. Eight scenarios, one application, and every
 variable on the consumer. It writes what it measured to `capture/`.
 
+> ### Would you rather read it?
+>
+> **[GUIDE.md](GUIDE.md)** is the written companion: the same ground more
+> slowly, with the code in full, plus the questions the video's runtime cut — how these three bugs appear in SQS,
+> Kafka and RabbitMQ specifically, how to redrive a dead letter queue safely,
+> where backoff and retry topics fit, and which queue metric is worth alerting on.
+>
+> This README is what the demo *is* and how to run it. The guide is the concept,
+> taught, with this demo as the evidence.
+
+
 ---
 
 ## What it measured here

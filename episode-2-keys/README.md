@@ -24,6 +24,17 @@ That script is the whole episode. It fires the same load four times — same
 twenty-five customers, same keys, same retry policy — changing only
 `IDEMPOTENCY_MODE`, and writes everything it measured to `capture/`.
 
+> ### Would you rather read it?
+>
+> **[GUIDE.md](GUIDE.md)** is the written companion: the same ground more
+> slowly, with the code in full, plus the questions the video's runtime cut — who mints the key and why it cannot be
+> the server, what to store when the work *fails*, what scoping buys you, and why
+> an in-process lock is not a substitute.
+>
+> This README is what the demo *is* and how to run it. The guide is the concept,
+> taught, with this demo as the evidence.
+
+
 ---
 
 ## What it measured here

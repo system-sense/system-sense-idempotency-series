@@ -12,9 +12,9 @@ Caching series, with Redis added in Episode 3 where it earns its place.
 
 | Episode | Folder | Thesis | State |
 | --- | --- | --- | --- |
-| 1. The Retry That Charged Your Customer Twice | [`episode-1-duplicates/`](episode-1-duplicates/) | A timeout is not a failure. The request succeeded; only the response was lost. | [**watch**](https://www.youtube.com/watch?v=KE7CCnTfQqk) |
-| 2. Your Idempotency Key Has a Race Condition | [`episode-2-keys/`](episode-2-keys/) | "Check, then insert" is TOCTOU, and the `UNIQUE` constraint only helps if you claim the key before you do the work. | [**watch**](https://www.youtube.com/watch?v=g19jax6Auxc) |
-| 3. 3 Ways Your Queue Silently Loses Work | [`episode-3-queues/`](episode-3-queues/) | Visibility timeouts, poison messages, dead-letter queues. Episode 2's endpoint, unchanged, still charging people twice. | demo built |
+| 1. The Retry That Charged Your Customer Twice | [`episode-1-duplicates/`](episode-1-duplicates/) | A timeout is not a failure. The request succeeded; only the response was lost. | [**watch**](https://www.youtube.com/watch?v=KE7CCnTfQqk) · [guide](episode-1-duplicates/GUIDE.md) |
+| 2. Your Idempotency Key Has a Race Condition | [`episode-2-keys/`](episode-2-keys/) | "Check, then insert" is TOCTOU, and the `UNIQUE` constraint only helps if you claim the key before you do the work. | [**watch**](https://www.youtube.com/watch?v=g19jax6Auxc) · [guide](episode-2-keys/GUIDE.md) |
+| 3. 3 Ways Your Queue Silently Loses Work | [`episode-3-queues/`](episode-3-queues/) | Visibility timeouts, poison messages, dead-letter queues. Episode 2's endpoint, unchanged, still charging people twice. | demo built · [guide](episode-3-queues/GUIDE.md) |
 | 4. Exactly-Once Delivery Is a Lie | [`episode-4-outbox/`](episode-4-outbox/) | The dual write. Exactly-once *delivery* is impossible; exactly-once *effects* are at-least-once plus an idempotent consumer. | demo built · [**guide**](episode-4-outbox/GUIDE.md) |
 
 ## Watch
@@ -30,14 +30,16 @@ on screen is reproducible from it.
 
 ## Prefer to read?
 
-**[Episode 4 — The Dual Write, the Transactional Outbox, and Exactly-Once](episode-4-outbox/GUIDE.md)**
-is a written companion to that episode: the same ground more slowly, with the
-code in full, and then the questions the video's runtime could not fit —
-running more than one relay, what happens as the outbox table grows, what the
-pattern does and does not say about ordering, and why two-phase commit is not
-the answer it looks like.
+Every episode has a **`GUIDE.md`** beside its demo — a written companion that
+covers the same ground more slowly, with the code in full, and then goes on into
+the questions an episode's runtime could not fit.
 
-Guides for episodes 1 to 3 are being written.
+| Guide | What it adds beyond the video |
+| --- | --- |
+| [1 — A Timeout Is Not a Failure](episode-1-duplicates/GUIDE.md) | every source of duplicates and which you control · what RFC 9110 actually says · retry configuration · why cancelling a request does not cancel the work |
+| [2 — Idempotency Keys, and the Race in the Obvious Version](episode-2-keys/GUIDE.md) | who mints the key · scoping · what to store when the work *fails* · why an in-process lock is not a substitute |
+| [3 — Visibility Timeouts, Poison Messages, and What a DLQ Is For](episode-3-queues/GUIDE.md) | the same bugs in SQS, Kafka and RabbitMQ · redriving a dead letter queue safely · backoff and retry topics · what to alert on |
+| [4 — The Dual Write, the Transactional Outbox, and Exactly-Once](episode-4-outbox/GUIDE.md) | running more than one relay · outbox table growth · ordering · why not two-phase commit |
 
 The folder `README.md` tells you what a demo is and how to run it. The `GUIDE.md`
 teaches the concept, with that demo as the evidence.
