@@ -1,25 +1,28 @@
 """Turns the raw capture logs into capture/metrics.json.
 
 Episode 1 measured money owed against money collected. Episode 2 measured the
-same pair three times against three handlers. This episode measures it against
-one handler — Episode 2's, unchanged and still correct — and varies only the
-consumer in front of it.
+same pair against three handlers. Episode 3 measured it against one handler and
+varied the consumer. This episode holds BOTH of those fixed — Episode 2's
+endpoint, Episode 3's finished consumer — and varies only what happens between
+the database and the queue, upstream of either of them.
 
-That is the point, so it is also the shape of this file: every scenario reads
-the same three books, and the story is which of them disagree.
+So the pair that matters here is a new one, and it is the pair nobody has:
 
-    lease        the lease expires mid-job          -> jobs run twice
-    heartbeat    the lease is held                  -> they stop
-    kill_after   a worker dies, ack after the work  -> one job runs twice
-    kill_before  the same death, ack before         -> four jobs vanish
-    poison       a message that can never succeed   -> forever, and silently
-    dlq          the same, with a delivery limit    -> depth becomes a signal
-    ordering     one message fails once             -> it finishes last
-    keyed        the lease scenario, key on         -> redelivered, charged once
+    orders committed        what the business believes happened
+    events on the stream    what anything downstream will ever hear about
 
-The last one is the payoff and it is the reason `job_runs` exists. Money alone
-cannot tell that scenario from a queue that stopped misbehaving, and the queue
-did not stop misbehaving.
+    commit_first        COMMIT then publish, killed between  -> events lost
+    publish_first       publish then COMMIT, same kill       -> phantom orders
+    outbox              one transaction, same kill           -> nothing lost
+    relay_crash         the relay dies before marking sent   -> published twice
+    relay_crash_keyed   the same, Episode 2's key on         -> charged once
+    agent_payload       a replayed run keyed on content      -> charged 3x
+    agent_position      keyed on (run_id, step, action)      -> charged once
+    everything          all of it, killed everywhere at once
+
+The last two pairs are the argument. `relay_crash` and `relay_crash_keyed`
+publish the same number of duplicate events; only one of them takes the money
+twice. That is exactly-once EFFECTS, and it is the only kind there is.
 """
 import json
 import pathlib
@@ -48,163 +51,169 @@ def dollars(cents: int) -> str:
     return f"{cents / 100:,.2f}"
 
 
-def run(log: str, name: str) -> dict:
-    """One scenario: what was published, what the queue did, what the money did."""
+def scenario(log: str, name: str) -> dict:
+    """One scenario: what was asked for, what survived, and what the money did."""
     body = text(log)
-    sent = kv(f"ENQUEUED label={name} ", body)
+    sent = kv(f"PLACED label={name} ", body)
+    rec = kv(f"RECONCILE {name} ", body)
     got = kv(f"RESULT {name} ", body)
 
-    owed = sent.get("owed_cents", 0)
-    collected = got.get("collected_cents", 0)
-    enqueued = got.get("messages_enqueued", sent.get("messages", 0))
+    owed = rec.get("owed_cents", 0)
+    collected = rec.get("collected_cents", 0)
 
     r = {
         "scenario": name,
-        "messages_published": enqueued,
-        "payable_messages": sent.get("payable", enqueued),
-        "poison_messages": sent.get("poison", 0),
 
-        # What the queue did. `deliveries` counts handovers, not jobs.
+        # The client's side. `no_response` is a request that died with the
+        # process in the middle of it: from out there, indistinguishable from
+        # an order that was never placed.
+        "orders_sent": sent.get("orders_sent", 0),
+        "accepted": sent.get("accepted", 0),
+        "no_response": sent.get("no_response", 0),
+
+        # The two books that cannot be written atomically.
+        "orders_committed": rec.get("orders", 0),
+        "events_published": rec.get("events", 0),
+        "distinct_keys": rec.get("distinct_keys", 0),
+        "events_lost": rec.get("events_lost", 0),
+        "phantom_events": rec.get("phantom_events", 0),
+        "duplicate_publishes": rec.get("duplicate_publishes", 0),
+
+        # The outbox itself.
+        "outbox_rows": rec.get("outbox_rows", 0),
+        "outbox_unsent": rec.get("outbox_unsent", 0),
+        "outbox_published_twice": rec.get("outbox_published_twice", 0),
+
+        # What Episode 3's consumer did with whatever reached it.
         "deliveries": got.get("deliveries", 0),
         "messages_delivered": got.get("messages_delivered", 0),
-        "jobs_run_twice": got.get("jobs_run_twice", 0),
-        "redeliveries": got.get("redeliveries", 0),
-        "jobs_never_attempted": got.get("jobs_never_attempted", 0),
-        "unfinished_runs": got.get("unfinished_runs", 0),
-        "failed_runs": got.get("failed_runs", 0),
         "replays": got.get("replays", 0),
+        "failed_runs": got.get("failed_runs", 0),
 
-        # What the money did.
+        # What actually happened to money.
         "app_charges": got.get("app_charges", 0),
-        "processor_charges": got.get("processor_charges", 0),
+        "processor_charges": rec.get("charges", 0),
         "double_charged_customers": got.get("double_charged_customers", 0),
         "duplicate_charges": got.get("duplicate_charges", 0),
         "owed_cents": owed,
         "collected_cents": collected,
     }
 
-    # Money moved twice, and money that was published and never moved at all.
-    # Both are failures; only one of them has anybody watching for it.
+    # Money taken twice, and money that was committed and never taken at all.
+    # Both are failures. Only one of them has anybody watching for it, and it
+    # is not the one that loses you the revenue.
     r["overcharge_cents"] = max(collected - owed, 0)
     r["shortfall_cents"] = max(owed - collected, 0)
     r["owed_dollars"] = dollars(owed)
     r["collected_dollars"] = dollars(collected)
     r["overcharge_dollars"] = dollars(r["overcharge_cents"])
     r["shortfall_dollars"] = dollars(r["shortfall_cents"])
-    payable = r["payable_messages"] or 1
-    r["jobs_run_twice_pct"] = round(100 * r["jobs_run_twice"] / payable, 1)
-    # Whatever the last queue reading of this scenario was called. Two of the
-    # scenarios never reach a finished state — that is the finding — so they
-    # are read at the moment the watch stopped instead.
-    for label in (f"{name}-finished ", f"{name}-after-30s ", f"{name} "):
-        r["queue_line"] = kv(f"QUEUE {label}", body)
-        if r["queue_line"]:
-            break
+    ordered = r["orders_committed"] or 1
+    r["events_lost_pct"] = round(100 * r["events_lost"] / ordered, 1)
     return r
 
 
-lease = run("02-lease.log", "lease")
-heartbeat = run("04-heartbeat.log", "heartbeat")
-kill_after = run("06-kill-after.log", "kill_after")
-kill_before = run("08-kill-before.log", "kill_before")
-poison = run("10-poison.log", "poison")
-dlq = run("12-dlq.log", "dlq")
-ordering = run("14-ordering.log", "ordering")
-keyed = run("16-keyed.log", "keyed")
-
-# ── The heartbeat's cost ───────────────────────────────────────────────────
-# Extending the lease is not free: it is a round trip per job per half-timeout,
-# for the whole duration of every job. Worth counting, because "just heartbeat"
-# is the answer everyone reaches for and it has a price and a hole in it.
-heartbeat["lease_extensions"] = kv("EXTENSIONS ", text("04-heartbeat.log")).get("count", 0)
-
-# ── The two kills ──────────────────────────────────────────────────────────
-for r, log_name in ((kill_after, "06-kill-after.log"), (kill_before, "08-kill-before.log")):
-    k = kv(f"KILL {r['scenario']} ", text(log_name))
-    r["killed_at_seconds"] = k.get("at_seconds", 0.0)
-    r["batch"] = k.get("batch", 0)
-    r["pending_after_the_kill"] = kv(
-        f"QUEUE {r['scenario']}-after-the-kill ", text(log_name)
-    ).get("pending", 0)
-
-# ── The poison message ─────────────────────────────────────────────────────
-p = kv("POISON ", text("10-poison.log"))
-# Counted with the worker stopped, so the figure holds still. It is not "16
-# deliveries and then it settled" — the worker was switched off mid-redelivery
-# and the entry was pending when it was.
-poison["deliveries_observed"] = p.get("deliveries", 0)
-poison["residency_seconds"] = p.get("residency_seconds", 0.0)
-poison["dead_lettered"] = p.get("dead_lettered", 0)
-w = kv("DLQWATCH poison ", text("10-poison.log"))
-poison["watch_seconds"] = w.get("seconds", 0)
-poison["max_dlq_depth"] = w.get("max_depth", 0)
-poison["first_alert_seconds"] = w.get("first_alert_s", -1)
-
-d = kv("DLQ ", text("12-dlq.log"))
-dlq["deliveries_before_dead_letter"] = d.get("deliveries_before_dlq", 0)
-dlq["seconds_to_dead_letter"] = d.get("seconds_to_dlq", 0.0)
-dlq["dead_letter_depth"] = d.get("depth", 0)
-wd = kv("DLQWATCH dlq ", text("12-dlq.log"))
-dlq["watch_seconds"] = wd.get("seconds", 0)
-dlq["first_alert_seconds"] = wd.get("first_alert_s", -1)
+def agent(log: str, name: str) -> dict:
+    """One agent scenario. Same twelve attempts; only the key is different."""
+    body = text(log)
+    a = kv(f"AGENT label={name} ", body)
+    m = kv(f"AGENTMONEY {name} ", body)
+    owed = a.get("owed_cents", 0)
+    collected = m.get("collected_cents", 0)
+    r = {
+        "scenario": name,
+        "runs": a.get("runs", 0),
+        "replays_each": a.get("replays", 0),
+        "attempts": a.get("attempts", 0),
+        # The whole reason payload keying cannot work: the stub model returned a
+        # different string on every one of these calls, so a hash of the step's
+        # output is a different key every time.
+        "distinct_model_outputs": a.get("distinct_notes", 0),
+        "charged": a.get("charged", 0),
+        "replayed": a.get("replayed", 0),
+        "conflicts": a.get("conflicts", 0),
+        "processor_charges": m.get("charges", 0),
+        "double_charged_customers": m.get("double_charged_customers", 0),
+        "duplicate_charges": m.get("duplicate_charges", 0),
+        "owed_cents": owed,
+        "collected_cents": collected,
+    }
+    r["overcharge_cents"] = max(collected - owed, 0)
+    r["owed_dollars"] = dollars(owed)
+    r["collected_dollars"] = dollars(collected)
+    r["overcharge_dollars"] = dollars(r["overcharge_cents"])
+    return r
 
 
-# ── Ordering ───────────────────────────────────────────────────────────────
-def completed_order(body: str) -> list[int]:
-    m = re.findall(r"^ORDER completed=([\d,]+)", body, re.M)
-    return [int(x) for x in m[-1].split(",")] if m else []
+commit_first = scenario("02-commit-first.log", "commit_first")
+publish_first = scenario("04-publish-first.log", "publish_first")
+outbox = scenario("06-outbox.log", "outbox")
+relay_crash = scenario("08-relay-crash.log", "relay_crash")
+relay_crash_keyed = scenario("10-relay-crash-keyed.log", "relay_crash_keyed")
+everything = scenario("14-books.log", "everything")
+agent_payload = agent("12-agent-payload.log", "agent_payload")
+agent_position = agent("13-agent-position.log", "agent_position")
 
+# ── What the outbox costs ──────────────────────────────────────────────────
+# The event is no longer published in the request. It is published by somebody
+# else, afterwards, and that gap is the price of the pattern. Worth measuring
+# rather than waving at: it is the one honest objection to the outbox and it is
+# smaller than people expect.
+lag = kv("OUTBOX_LAG_MS ", text("06-outbox.log"))
+outbox["relay_lag_median_ms"] = lag.get("median", 0.0)
+outbox["relay_lag_max_ms"] = lag.get("max", 0.0)
 
-def inversions(seq: list[int]) -> int:
-    """Pairs finished out of the order they were published in."""
-    return sum(1 for i in range(len(seq)) for j in range(i + 1, len(seq)) if seq[i] > seq[j])
+# ── The producer's kills, counted from its own log ─────────────────────────
+for r, services_log in ((commit_first, "03-commit-first-services.log"),
+                        (publish_first, "05-publish-first-services.log"),
+                        (outbox, "07-outbox-services.log")):
+    r["producer_kills"] = len(re.findall(r"\*\*\* KILLED", text(services_log)))
 
+for r, services_log in ((relay_crash, "09-relay-crash-services.log"),
+                        (relay_crash_keyed, "11-relay-crash-keyed-services.log")):
+    r["relay_kills"] = len(re.findall(r"\*\*\* KILLED", text(services_log)))
 
-order = completed_order(text("14-ordering.log"))
-ordering["published_order"] = list(range(1, ordering["messages_published"] + 1))
-ordering["completed_order"] = order
-ordering["out_of_order_pairs"] = inversions(order)
-ordering["retried_message_finished_at_position"] = (
-    order.index(5) + 1 if 5 in order else 0
-)
-
-# ── The scenario's own settings, read back from the run rather than assumed ──
+# ── The settings the run actually used, read back rather than assumed ──────
 up = text("01-compose-up.log")
 lat = re.findall(r"^(\d+) (\d+)\s*$", up, re.M)
 base, spread = (int(lat[-1][0]), int(lat[-1][1])) if lat else (0, 0)
 mode = re.search(r'"mode":"(\w+)"', up)
-defaults = re.search(
-    r"worker defaults = (\w+) (\d+) (\d+) (\d+) (\d+) (\d+)", up
-)
+defaults = re.search(r"worker defaults = (\w+) (\d+) (\d+) (\d+) (\d+) (\d+)", up)
+setup = kv("SETUP ", up)
 
 metrics = {
     "setup": {
-        "amount_cents": kv("ENQUEUED label=lease ", text("02-lease.log")).get("amount_cents", 0),
-        "amount_dollars": dollars(kv("ENQUEUED label=lease ", text("02-lease.log")).get("amount_cents", 0)),
-        # The endpoint in front of which all of this happens. It is Episode 2's,
-        # in the mode that cannot charge twice for one key, and it never changes.
+        "orders": setup.get("orders_in_fleet", 0),
+        "crash_every": setup.get("crash_every", 0),
+        "expected_kills": setup.get("expected_kills", 0),
+        "relay_crashes": setup.get("relay_crashes", 0),
+        "amount_cents": kv("PLACED label=commit_first ", text("02-commit-first.log")).get("amount_cents", 0),
+        "amount_dollars": dollars(kv("PLACED label=commit_first ", text("02-commit-first.log")).get("amount_cents", 0)),
+
+        # The endpoint and the consumer in front of which all of this happens.
+        # Episode 2's, in the mode that cannot charge twice for one key, and
+        # Episode 3's, with the lease held and the key passed on. Neither one
+        # changes anywhere in this episode.
         "app_idempotency_mode": mode.group(1) if mode else "",
+        "worker_ack_mode": defaults.group(1) if defaults else "",
         "visibility_timeout_ms": int(defaults.group(2)) if defaults else 0,
-        "worker_ack_mode_default": defaults.group(1) if defaults else "",
+        "worker_heartbeat": int(defaults.group(3)) if defaults else 0,
+        "worker_max_deliveries": int(defaults.group(4)) if defaults else 0,
+        "worker_idempotent_consumer": int(defaults.group(5)) if defaults else 0,
         "workers": 2,
         "processor_latency_base_ms": base,
         "processor_latency_spread_ms": spread,
         "processor_latency_min_ms": base,
         "processor_latency_max_ms": base + spread - 1 if spread else 0,
-        # Jobs whose payment outlives a two-second lease, by construction:
-        # 1200 + (id * 137) % 2400 > 2000.
-        "customers_slower_than_lease": sum(
-            1 for i in range(1, 26) if base + (i * 137) % spread > 2000
-        ) if spread else 0,
     },
-    "lease": lease,
-    "heartbeat": heartbeat,
-    "kill_after": kill_after,
-    "kill_before": kill_before,
-    "poison": poison,
-    "dlq": dlq,
-    "ordering": ordering,
-    "keyed": keyed,
+    "commit_first": commit_first,
+    "publish_first": publish_first,
+    "outbox": outbox,
+    "relay_crash": relay_crash,
+    "relay_crash_keyed": relay_crash_keyed,
+    "agent_payload": agent_payload,
+    "agent_position": agent_position,
+    "everything": everything,
 }
 
 (OUT / "metrics.json").write_text(json.dumps(metrics, indent=2) + "\n")
