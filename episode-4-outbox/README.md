@@ -27,6 +27,17 @@ That script is the whole episode. Six scenarios and one agent segment, the same
 twelve orders throughout, and every variable in the fifteen lines between a
 database and a queue. It writes what it measured to `capture/`.
 
+> ### Would you rather read it?
+>
+> **[GUIDE.md](GUIDE.md)** is the written companion: the same ground more
+> slowly, with the code in full, plus the questions the video's runtime budget
+> cut — running more than one relay, what happens as the table grows, what the
+> pattern does and does not say about ordering, and why two-phase commit is not
+> the answer it looks like.
+>
+> This README is what the demo *is* and how to run it. The guide is the concept,
+> taught, with this demo as the evidence.
+
 ---
 
 ## The bug is two lines apart, and both of them are correct
