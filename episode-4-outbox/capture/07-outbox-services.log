@@ -1,0 +1,29 @@
+[relay] poll=200ms batch=10 crash_after_publish=never
+[relay] outbox=1 seq=1 customer=1 key=k_44b2d4f2d6d5 PUBLISHED 1788436313637-0 attempt=1
+[relay] outbox=2 seq=2 customer=2 key=k_5c09ca7aaab0 PUBLISHED 1788436313639-0 attempt=1
+[relay] outbox=3 seq=3 customer=3 key=k_c48de52f6b32 PUBLISHED 1788436313640-0 attempt=1
+[relay] outbox=4 seq=4 customer=4 key=k_c0de1e1df769 PUBLISHED 1788436313641-0 attempt=1
+[relay] outbox=5 seq=5 customer=5 key=k_11b4f2e52d17 PUBLISHED 1788436314047-0 attempt=1
+[relay] outbox=6 seq=6 customer=6 key=k_b725a7efbee5 PUBLISHED 1788436314047-1 attempt=1
+[relay] outbox=7 seq=7 customer=7 key=k_0f86086026cb PUBLISHED 1788436314048-0 attempt=1
+[relay] outbox=8 seq=8 customer=8 key=k_84d286710ced PUBLISHED 1788436314048-1 attempt=1
+[relay] outbox=9 seq=9 customer=9 key=k_e4c0e5e66998 PUBLISHED 1788436314672-0 attempt=1
+[relay] outbox=10 seq=10 customer=10 key=k_6f0510119007 PUBLISHED 1788436314673-0 attempt=1
+[relay] outbox=11 seq=11 customer=11 key=k_c0124f72b4ba PUBLISHED 1788436314673-1 attempt=1
+[relay] outbox=12 seq=12 customer=12 key=k_0752a2abc383 PUBLISHED 1788436314674-0 attempt=1
+[orders] mode=outbox crash_every=4
+[orders] seq=1 customer=1 order=1 outbox=1 COMMITTED (both)
+[orders] seq=2 customer=2 order=2 outbox=2 COMMITTED (both)
+[orders] seq=3 customer=3 order=3 outbox=3 COMMITTED (both)
+[orders] seq=4 customer=4 *** KILLED after COMMIT, before publish ***
+[orders] mode=outbox crash_every=4
+[orders] seq=5 customer=5 order=5 outbox=5 COMMITTED (both)
+[orders] seq=6 customer=6 order=6 outbox=6 COMMITTED (both)
+[orders] seq=7 customer=7 order=7 outbox=7 COMMITTED (both)
+[orders] seq=8 customer=8 *** KILLED after COMMIT, before publish ***
+[orders] mode=outbox crash_every=4
+[orders] seq=9 customer=9 order=9 outbox=9 COMMITTED (both)
+[orders] seq=10 customer=10 order=10 outbox=10 COMMITTED (both)
+[orders] seq=11 customer=11 order=11 outbox=11 COMMITTED (both)
+[orders] seq=12 customer=12 *** KILLED after COMMIT, before publish ***
+[orders] mode=outbox crash_every=4

@@ -1,0 +1,25 @@
+-- 4 agent runs, each replayed 3 times, keyed on position
+   run_001 replay 1  customer 1   key=k_run_001:2:charge_customer        CHARGED   ch_85663d8e012a4225
+   run_001 replay 2  customer 1   key=k_run_001:2:charge_customer        replayed  (the same response, no second charge)
+   run_001 replay 3  customer 1   key=k_run_001:2:charge_customer        replayed  (the same response, no second charge)
+   run_002 replay 1  customer 2   key=k_run_002:2:charge_customer        CHARGED   ch_d532865a9a194058
+   run_002 replay 2  customer 2   key=k_run_002:2:charge_customer        replayed  (the same response, no second charge)
+   run_002 replay 3  customer 2   key=k_run_002:2:charge_customer        replayed  (the same response, no second charge)
+   run_003 replay 1  customer 3   key=k_run_003:2:charge_customer        CHARGED   ch_593b93c69c18467c
+   run_003 replay 2  customer 3   key=k_run_003:2:charge_customer        replayed  (the same response, no second charge)
+   run_003 replay 3  customer 3   key=k_run_003:2:charge_customer        replayed  (the same response, no second charge)
+   run_004 replay 1  customer 4   key=k_run_004:2:charge_customer        CHARGED   ch_d54ea18ee9484886
+   run_004 replay 2  customer 4   key=k_run_004:2:charge_customer        replayed  (the same response, no second charge)
+   run_004 replay 3  customer 4   key=k_run_004:2:charge_customer        replayed  (the same response, no second charge)
+AGENT label=agent_position runs=4 replays=3 attempts=12 distinct_notes=12 charged=4 replayed=8 conflicts=0 owed_cents=16000 amount_cents=4000
+
+-- what actually happened to money
+ customer_id | times_charged | cents 
+-------------+---------------+-------
+           1 |             1 |  4000
+           2 |             1 |  4000
+           3 |             1 |  4000
+           4 |             1 |  4000
+(4 rows)
+
+AGENTMONEY agent_position charges=4 collected_cents=16000 double_charged_customers=0 duplicate_charges=0

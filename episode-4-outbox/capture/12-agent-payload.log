@@ -1,0 +1,25 @@
+-- 4 agent runs, each replayed 3 times, keyed on payload
+   run_001 replay 1  customer 1   key=k_fb6103e0d6a9b592                 CHARGED   ch_320c14d5f9b64313
+   run_001 replay 2  customer 1   key=k_fd867e92f733b188                 CHARGED   ch_f69f3465155e487d
+   run_001 replay 3  customer 1   key=k_87610c7d0867c1c3                 CHARGED   ch_1abffe9088c943ae
+   run_002 replay 1  customer 2   key=k_4552b224f8cf4e18                 CHARGED   ch_097b025362c64560
+   run_002 replay 2  customer 2   key=k_a66da0f9b3ca2de3                 CHARGED   ch_636ac0f876564388
+   run_002 replay 3  customer 2   key=k_000d1443bdf8792a                 CHARGED   ch_1dbb180627644cb7
+   run_003 replay 1  customer 3   key=k_d2b2a32056cc4f01                 CHARGED   ch_8f0c83d5e5714fee
+   run_003 replay 2  customer 3   key=k_96efae5acf5bb5f6                 CHARGED   ch_5b6e0d3b30034c3b
+   run_003 replay 3  customer 3   key=k_9b7d5a06aad7ee4b                 CHARGED   ch_f30ba53fd05c49e7
+   run_004 replay 1  customer 4   key=k_fa2d439089be6773                 CHARGED   ch_72879afc64654d22
+   run_004 replay 2  customer 4   key=k_a95fadbb64e4e6a8                 CHARGED   ch_70dcc060d3ad4347
+   run_004 replay 3  customer 4   key=k_3285f3d50f54d65a                 CHARGED   ch_b58d6905037743c8
+AGENT label=agent_payload runs=4 replays=3 attempts=12 distinct_notes=12 charged=12 replayed=0 conflicts=0 owed_cents=16000 amount_cents=4000
+
+-- what actually happened to money
+ customer_id | times_charged | cents 
+-------------+---------------+-------
+           1 |             3 | 12000
+           2 |             3 | 12000
+           3 |             3 | 12000
+           4 |             3 | 12000
+(4 rows)
+
+AGENTMONEY agent_payload charges=12 collected_cents=48000 double_charged_customers=4 duplicate_charges=8

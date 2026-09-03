@@ -1,0 +1,17 @@
+[relay] poll=200ms batch=10 crash_after_publish=never
+[orders] mode=publish_first crash_every=4
+[orders] seq=1 customer=1 PUBLISHED 1788436288337-0 -> order=1 COMMITTED
+[orders] seq=2 customer=2 PUBLISHED 1788436288346-0 -> order=2 COMMITTED
+[orders] seq=3 customer=3 PUBLISHED 1788436288351-0 -> order=3 COMMITTED
+[orders] seq=4 customer=4 *** KILLED after publish, before COMMIT ***
+[orders] mode=publish_first crash_every=4
+[orders] seq=5 customer=5 PUBLISHED 1788436288873-0 -> order=4 COMMITTED
+[orders] seq=6 customer=6 PUBLISHED 1788436288876-0 -> order=5 COMMITTED
+[orders] seq=7 customer=7 PUBLISHED 1788436288878-0 -> order=6 COMMITTED
+[orders] seq=8 customer=8 *** KILLED after publish, before COMMIT ***
+[orders] mode=publish_first crash_every=4
+[orders] seq=9 customer=9 PUBLISHED 1788436289397-0 -> order=7 COMMITTED
+[orders] seq=10 customer=10 PUBLISHED 1788436289400-0 -> order=8 COMMITTED
+[orders] seq=11 customer=11 PUBLISHED 1788436289403-0 -> order=9 COMMITTED
+[orders] seq=12 customer=12 *** KILLED after publish, before COMMIT ***
+[orders] mode=publish_first crash_every=4

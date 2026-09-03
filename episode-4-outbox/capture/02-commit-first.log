@@ -1,0 +1,43 @@
+-- worker-1 worker-2 up  (ack=after visibility=15000ms heartbeat=1 max_deliveries=5 key=1)
+-- relay up  (crash_after_publish=0 poll=200ms)
+-- orders up  (publish_mode=commit_first crash_every=4)
+-- twelve orders, one at a time. The producer dies on every 4th.
+  seq=1   customer 1   200  order=1  key=k_0a5f15f184db  1788436266435-0
+  seq=2   customer 2   200  order=2  key=k_852ff3ba82e5  1788436266439-0
+  seq=3   customer 3   200  order=3  key=k_a64bbfdb43bc  1788436266442-0
+  seq=4   customer 4   ---  NO RESPONSE (RemoteDisconnected) — the process died with this request in it
+  seq=5   customer 5   200  order=5  key=k_f19611ef6eac  1788436266966-0
+  seq=6   customer 6   200  order=6  key=k_7a3a12c2c956  1788436266968-0
+  seq=7   customer 7   200  order=7  key=k_c6ca01bde153  1788436266970-0
+  seq=8   customer 8   ---  NO RESPONSE (RemoteDisconnected) — the process died with this request in it
+  seq=9   customer 9   200  order=9  key=k_67998586bd85  1788436267497-0
+  seq=10  customer 10  200  order=10  key=k_8b63c357e25c  1788436267499-0
+  seq=11  customer 11  200  order=11  key=k_577c75b73c04  1788436267500-0
+  seq=12  customer 12  ---  NO RESPONSE (RemoteDisconnected) — the process died with this request in it
+PLACED label=commit_first orders_sent=12 accepted=9 no_response=3 owed_cents=48000 amount_cents=4000
+
+-- commit_first
+   orders committed          12
+   events on the stream       9   (9 distinct keys)
+   events lost                3   <- committed, never published
+   phantom events             0   <- published, never committed
+   duplicate publishes        0   <- one intent, two message ids
+   outbox rows                0   (0 unsent, 0 published more than once)
+   charges                    9
+   owed  $    480.00
+   taken $    360.00
+   -- orders nothing will ever pay for
+      seq=4   customer 4   $  40.00  key=k_a0a816804a27
+      seq=8   customer 8   $  40.00  key=k_641880d7b1d1
+      seq=12  customer 12  $  40.00  key=k_d29fa7f1150c
+RECONCILE commit_first orders=12 events=9 distinct_keys=9 events_lost=3 phantom_events=0 duplicate_publishes=0 outbox_rows=0 outbox_unsent=0 outbox_published_twice=0 charges=9 owed_cents=48000 collected_cents=36000
+
+-- the producer's own log, at the moment it stopped existing
+[orders] mode=commit_first crash_every=4
+[orders] seq=4 customer=4 *** KILLED after COMMIT, before publish ***
+[orders] mode=commit_first crash_every=4
+[orders] seq=8 customer=8 *** KILLED after COMMIT, before publish ***
+[orders] mode=commit_first crash_every=4
+[orders] seq=12 customer=12 *** KILLED after COMMIT, before publish ***
+[orders] mode=commit_first crash_every=4
+RESULT commit_first orders_placed=12 deliveries=9 messages_delivered=9 replays=0 failed_runs=0 app_charges=9 double_charged_customers=0 duplicate_charges=0

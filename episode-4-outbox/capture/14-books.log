@@ -1,0 +1,53 @@
+-- worker-1 worker-2 up  (ack=after visibility=15000ms heartbeat=1 max_deliveries=5 key=1)
+-- relay up  (crash_after_publish=3 poll=200ms)
+-- orders up  (publish_mode=outbox crash_every=4)
+-- everything killed at once: the producer on every 4th order, the
+   relay 3 times before it could mark a row sent.
+  seq=1   customer 1   200  order=1  key=k_97faa653a211  outbox=1
+  seq=2   customer 2   200  order=2  key=k_86879f4d5d14  outbox=2
+  seq=3   customer 3   200  order=3  key=k_c2d919ffb66f  outbox=3
+  seq=4   customer 4   ---  NO RESPONSE (RemoteDisconnected) — the process died with this request in it
+  seq=5   customer 5   200  order=5  key=k_6a98cc80a314  outbox=5
+  seq=6   customer 6   200  order=6  key=k_730a35068a5d  outbox=6
+  seq=7   customer 7   200  order=7  key=k_75637986c9da  outbox=7
+  seq=8   customer 8   ---  NO RESPONSE (RemoteDisconnected) — the process died with this request in it
+  seq=9   customer 9   200  order=9  key=k_c9f2e0642d9e  outbox=9
+  seq=10  customer 10  200  order=10  key=k_2b1f63016cd0  outbox=10
+  seq=11  customer 11  200  order=11  key=k_5b27cc42787d  outbox=11
+  seq=12  customer 12  ---  NO RESPONSE (RemoteDisconnected) — the process died with this request in it
+PLACED label=everything orders_sent=12 accepted=9 no_response=3 owed_cents=48000 amount_cents=4000
+
+-- everything
+   orders committed          12
+   events on the stream      15   (12 distinct keys)
+   events lost                0   <- committed, never published
+   phantom events             0   <- published, never committed
+   duplicate publishes        3   <- one intent, two message ids
+   outbox rows               12   (0 unsent, 3 published more than once)
+   charges                   12
+   owed  $    480.00
+   taken $    480.00
+   -- one order, published more than once
+      seq=1   customer 1   key=k_97faa653a211  messages=1788436434005-0 + 1788436434252-0
+      seq=2   customer 2   key=k_86879f4d5d14  messages=1788436434253-0 + 1788436434587-0
+      seq=3   customer 3   key=k_c2d919ffb66f  messages=1788436434588-0 + 1788436435107-0
+RECONCILE everything orders=12 events=15 distinct_keys=12 events_lost=0 phantom_events=0 duplicate_publishes=3 outbox_rows=12 outbox_unsent=0 outbox_published_twice=3 charges=12 owed_cents=48000 collected_cents=48000
+-- what the business committed
+ orders | cents | customers 
+--------+-------+-----------
+     12 | 48000 |        12
+(1 row)
+
+-- what the queue was told
+ outbox_rows | unsent | published_twice 
+-------------+--------+-----------------
+          12 |      0 |               3
+(1 row)
+
+-- what actually happened to money
+ charges | cents | customers 
+---------+-------+-----------
+      12 | 48000 |        12
+(1 row)
+
+RESULT everything orders_placed=12 deliveries=15 messages_delivered=15 replays=3 failed_runs=0 app_charges=12 double_charged_customers=0 duplicate_charges=0

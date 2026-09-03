@@ -1,0 +1,49 @@
+-- worker-1 worker-2 up  (ack=after visibility=15000ms heartbeat=1 max_deliveries=5 key=1)
+-- relay up  (crash_after_publish=0 poll=200ms)
+-- orders up  (publish_mode=outbox crash_every=4)
+-- the same twelve orders, and the producer still dies on every 4th.
+  seq=1   customer 1   200  order=1  key=k_44b2d4f2d6d5  outbox=1
+  seq=2   customer 2   200  order=2  key=k_5c09ca7aaab0  outbox=2
+  seq=3   customer 3   200  order=3  key=k_c48de52f6b32  outbox=3
+  seq=4   customer 4   ---  NO RESPONSE (RemoteDisconnected) — the process died with this request in it
+  seq=5   customer 5   200  order=5  key=k_11b4f2e52d17  outbox=5
+  seq=6   customer 6   200  order=6  key=k_b725a7efbee5  outbox=6
+  seq=7   customer 7   200  order=7  key=k_0f86086026cb  outbox=7
+  seq=8   customer 8   ---  NO RESPONSE (RemoteDisconnected) — the process died with this request in it
+  seq=9   customer 9   200  order=9  key=k_e4c0e5e66998  outbox=9
+  seq=10  customer 10  200  order=10  key=k_6f0510119007  outbox=10
+  seq=11  customer 11  200  order=11  key=k_c0124f72b4ba  outbox=11
+  seq=12  customer 12  ---  NO RESPONSE (RemoteDisconnected) — the process died with this request in it
+PLACED label=outbox orders_sent=12 accepted=9 no_response=3 owed_cents=48000 amount_cents=4000
+
+-- outbox
+   orders committed          12
+   events on the stream      12   (12 distinct keys)
+   events lost                0   <- committed, never published
+   phantom events             0   <- published, never committed
+   duplicate publishes        0   <- one intent, two message ids
+   outbox rows               12   (0 unsent, 0 published more than once)
+   charges                   12
+   owed  $    480.00
+   taken $    480.00
+RECONCILE outbox orders=12 events=12 distinct_keys=12 events_lost=0 phantom_events=0 duplicate_publishes=0 outbox_rows=12 outbox_unsent=0 outbox_published_twice=0 charges=12 owed_cents=48000 collected_cents=48000
+
+-- the outbox, row by row
+ id | order_id | publish_attempts | sent | relay_lag_s 
+----+----------+------------------+------+-------------
+  1 |        1 |                1 | t    | 00.169
+  2 |        2 |                1 | t    | 00.163
+  3 |        3 |                1 | t    | 00.162
+  4 |        4 |                1 | t    | 00.160
+  5 |        5 |                1 | t    | 00.046
+  6 |        6 |                1 | t    | 00.043
+  7 |        7 |                1 | t    | 00.042
+  8 |        8 |                1 | t    | 00.040
+  9 |        9 |                1 | t    | 00.135
+ 10 |       10 |                1 | t    | 00.132
+ 11 |       11 |                1 | t    | 00.130
+ 12 |       12 |                1 | t    | 00.129
+(12 rows)
+
+OUTBOX_LAG_MS median=131.3 max=169.6
+RESULT outbox orders_placed=12 deliveries=12 messages_delivered=12 replays=0 failed_runs=0 app_charges=12 double_charged_customers=0 duplicate_charges=0
